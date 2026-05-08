@@ -105,10 +105,7 @@ export default function Header() {
           style={{ background: 'rgba(5, 5, 16, 0.8)', backdropFilter: 'blur(8px)' }}
           onClick={(e) => e.target === e.currentTarget && setShowSettings(false)}
         >
-          <div
-            className="w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col rounded-2xl"
-            style={{ background: 'rgba(10, 10, 25, 0.98)', border: '1px solid rgba(255, 255, 255, 0.1)' }}
-          >
+          <div className="w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col rounded-2xl glass-card">
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-white/10">
               <h2 className="text-xl font-semibold">API 配置</h2>
