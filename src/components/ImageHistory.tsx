@@ -17,13 +17,13 @@ export default function ImageHistory() {
   }
 
   return (
-    <div className="bg-gray-800 rounded-lg p-4 h-full flex flex-col">
+    <div className="glass-card rounded-xl p-4 h-full flex flex-col">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold">生成历史</h2>
         {records.length > 0 && (
           <button
             onClick={clearHistory}
-            className="text-sm text-red-400 hover:text-red-300"
+            className="text-sm text-red-400/70 hover:text-red-400 transition-colors cursor-pointer"
           >
             清空
           </button>
@@ -31,20 +31,20 @@ export default function ImageHistory() {
       </div>
 
       {records.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center text-gray-500">
+        <div className="flex-1 flex items-center justify-center text-white/40">
           暂无生成记录
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto space-y-3">
+        <div className="flex-1 overflow-y-auto space-y-3 scrollbar-aurora">
           {records.map((record) => (
             <div
               key={record.id}
-              className="bg-gray-700 rounded-lg p-3 border border-gray-600"
+              className="glass-card rounded-lg p-3"
             >
               <div className="flex gap-3">
                 {/* 缩略图 */}
                 <div
-                  className="w-20 h-20 flex-shrink-0 cursor-pointer overflow-hidden rounded"
+                  className="w-20 h-20 flex-shrink-0 cursor-pointer overflow-hidden rounded-lg"
                   onClick={() => handleDownload(record)}
                 >
                   <img
@@ -56,19 +56,19 @@ export default function ImageHistory() {
 
                 {/* 信息 */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-300 line-clamp-2">{record.prompt}</p>
+                  <p className="text-sm text-white/80 line-clamp-2">{record.prompt}</p>
                   <div className="mt-2 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs px-1.5 py-0.5 bg-gray-600 rounded">
+                      <span className="text-xs px-1.5 py-0.5 bg-cyan-500/10 text-cyan-400/70 rounded">
                         {record.provider.toUpperCase()}
                       </span>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-white/40">
                         {format(record.createdAt, 'MM/dd HH:mm', { locale: zhCN })}
                       </span>
                     </div>
                     <button
                       onClick={() => deleteRecord(record.id)}
-                      className="text-gray-500 hover:text-red-400 text-sm"
+                      className="text-white/30 hover:text-red-400 transition-colors text-sm cursor-pointer"
                     >
                       删除
                     </button>

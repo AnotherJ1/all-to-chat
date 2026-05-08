@@ -28,9 +28,7 @@ export default function ChatView() {
       case 'chat':
         return (
           <div className="flex flex-col h-full">
-            {/* System Prompt 配置 */}
             <SystemPromptInput />
-            {/* 消息列表 */}
             <div className="flex-1 overflow-y-auto scrollbar-aurora px-6 py-4">
               {currentSession && currentSession.messages.length > 0 ? (
                 <div className="space-y-4 max-w-4xl mx-auto">
@@ -48,7 +46,6 @@ export default function ChatView() {
                 </div>
               )}
             </div>
-            {/* 输入框 */}
             <div className="px-6 py-4">
               <div className="max-w-4xl mx-auto">
                 <MessageInput />

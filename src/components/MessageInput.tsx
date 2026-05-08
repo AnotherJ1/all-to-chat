@@ -106,7 +106,7 @@ export default function MessageInput() {
   }
 
   return (
-    <div className="relative">
+    <div className="relative px-6 py-4">
       {/* Streaming Preview */}
       {isStreaming && streamingContent && (
         <div

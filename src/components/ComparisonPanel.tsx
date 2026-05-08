@@ -20,7 +20,6 @@ export default function ComparisonPanel() {
   const [responses, setResponses] = useState<Map<string, ModelResponse>>(new Map())
   const abortControllersRef = useRef<Map<string, AbortController>>(new Map())
 
-  // 初始添加一个默认模型（如果列表为空）
   useEffect(() => {
     if (models.length === 0) {
       addModel({
@@ -34,7 +33,6 @@ export default function ComparisonPanel() {
     }
   }, [])
 
-  // 发送消息到单个模型
   const sendToModel = async (
     config: MultiModelConfig,
     message: string,
@@ -42,7 +40,6 @@ export default function ComparisonPanel() {
   ): Promise<string> => {
     const { protocol, baseUrl, apiKey, model } = config
 
-    // 构建请求
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     }
@@ -58,7 +55,6 @@ export default function ComparisonPanel() {
       stream: true,
     }
 
-    // 根据协议调整请求格式
     if (protocol === 'anthropic') {
       endpoint = `${baseUrl}/messages`
       headers['x-api-key'] = apiKey
@@ -82,7 +78,6 @@ export default function ComparisonPanel() {
       throw new Error(errorData.error?.message || `HTTP ${response.status}`)
     }
 
-    // 处理流式响应
     const reader = response.body?.getReader()
     if (!reader) throw new Error('No response body')
 
@@ -104,19 +99,16 @@ export default function ComparisonPanel() {
           try {
             const parsed = JSON.parse(data)
             if (protocol === 'anthropic') {
-              // Anthropic 流式格式
               if (parsed.type === 'content_block_delta') {
                 fullContent += parsed.delta?.text || ''
               }
             } else {
-              // OpenAI/Gemini 流式格式
               const content = parsed.choices?.[0]?.delta?.content
               if (content) {
                 fullContent += content
               }
             }
 
-            // 更新实时内容
             setResponses((prev) => {
               const newMap = new Map(prev)
               const current = newMap.get(config.id)
@@ -126,7 +118,7 @@ export default function ComparisonPanel() {
               return newMap
             })
           } catch {
-            // 忽略解析错误
+            // ignore parse errors
           }
         }
       }
@@ -135,10 +127,9 @@ export default function ComparisonPanel() {
     return fullContent
   }
 
-  // 重试单个模型
   const retryModel = async (modelId: string, userMessage: string) => {
-    const model = models.find((m) => m.id === modelId)
-    if (!model) return
+    const modelItem = models.find((m) => m.id === modelId)
+    if (!modelItem) return
 
     const controller = new AbortController()
     abortControllersRef.current.set(modelId, controller)
@@ -152,7 +143,7 @@ export default function ComparisonPanel() {
     const startTime = Date.now()
 
     try {
-      const response = await sendToModel(model, userMessage, controller.signal)
+      const response = await sendToModel(modelItem, userMessage, controller.signal)
       const duration = Date.now() - startTime
 
       setResponses((prev) => {
@@ -178,7 +169,6 @@ export default function ComparisonPanel() {
     }
   }
 
-  // 取消单个模型
   const cancelModel = (modelId: string) => {
     const controller = abortControllersRef.current.get(modelId)
     if (controller) {
@@ -192,7 +182,7 @@ export default function ComparisonPanel() {
   return (
     <div className="flex flex-col h-full">
       {/* 模型列表头部 */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-700">
+      <div className="flex items-center justify-between p-4 border-b border-white/10">
         <h2 className="text-lg font-semibold">多模型对比 ({enabledModels.length})</h2>
         <div className="flex gap-2">
           <button
@@ -206,7 +196,7 @@ export default function ComparisonPanel() {
                 enabled: true,
               })
             }}
-            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm transition-colors"
+            className="btn-aurora btn-aurora-primary px-3 py-1.5 text-sm"
           >
             添加模型
           </button>
@@ -214,37 +204,37 @@ export default function ComparisonPanel() {
       </div>
 
       {/* 模型配置列表 */}
-      <div className="p-4 border-b border-gray-700 space-y-2 max-h-48 overflow-y-auto">
-        {models.map((model) => (
+      <div className="p-4 border-b border-white/10 space-y-2 max-h-48 overflow-y-auto scrollbar-aurora">
+        {models.map((modelItem) => (
           <div
-            key={model.id}
-            className={`flex items-center gap-3 p-2 rounded-lg ${
-              model.enabled ? 'bg-gray-700' : 'bg-gray-800'
+            key={modelItem.id}
+            className={`flex items-center gap-3 p-2 rounded-xl ${
+              modelItem.enabled ? 'glass-card' : 'glass'
             }`}
           >
             <input
               type="checkbox"
-              checked={model.enabled}
-              onChange={() => toggleModel(model.id)}
-              className="w-4 h-4 rounded"
+              checked={modelItem.enabled}
+              onChange={() => toggleModel(modelItem.id)}
+              className="w-4 h-4 rounded cursor-pointer accent-cyan-400"
             />
             <input
               type="text"
-              value={model.name}
-              onChange={(e) => updateModel(model.id, { name: e.target.value })}
+              value={modelItem.name}
+              onChange={(e) => updateModel(modelItem.id, { name: e.target.value })}
               className="flex-1 bg-transparent border-none focus:outline-none text-sm"
               placeholder="模型名称"
             />
             <input
               type="text"
-              value={model.model}
-              onChange={(e) => updateModel(model.id, { model: e.target.value })}
-              className="w-32 bg-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+              value={modelItem.model}
+              onChange={(e) => updateModel(modelItem.id, { model: e.target.value })}
+              className="input-aurora w-32 text-sm py-1.5"
               placeholder="模型名"
             />
             <button
-              onClick={() => removeModel(model.id)}
-              className="text-gray-400 hover:text-red-400"
+              onClick={() => removeModel(modelItem.id)}
+              className="text-white/40 hover:text-red-400 transition-colors cursor-pointer"
             >
               ×
             </button>
@@ -255,23 +245,23 @@ export default function ComparisonPanel() {
       {/* 对比结果区域 */}
       <div className="flex-1 overflow-hidden">
         {enabledModels.length === 0 ? (
-          <div className="h-full flex items-center justify-center text-gray-500">
+          <div className="h-full flex items-center justify-center text-white/40">
             请添加并启用至少一个模型
           </div>
         ) : (
-          <div className="h-full flex divide-x divide-gray-700">
-            {enabledModels.map((model) => {
-              const response = responses.get(model.id)
+          <div className="h-full flex divide-x divide-white/10">
+            {enabledModels.map((modelItem) => {
+              const response = responses.get(modelItem.id)
               const status = response?.status || 'idle'
 
               return (
-                <div key={model.id} className="flex-1 flex flex-col min-w-0">
+                <div key={modelItem.id} className="flex-1 flex flex-col min-w-0">
                   {/* 模型标题栏 */}
-                  <div className="p-3 bg-gray-800 border-b border-gray-700 flex items-center justify-between">
+                  <div className="p-3 bg-black/20 border-b border-white/10 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">{model.name}</span>
+                      <span className="font-medium">{modelItem.name}</span>
                       {status === 'thinking' && (
-                        <span className="text-xs px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded animate-pulse">
+                        <span className="text-xs px-2 py-0.5 bg-cyan-500/20 text-cyan-400 rounded animate-pulse">
                           思考中
                         </span>
                       )}
@@ -288,22 +278,22 @@ export default function ComparisonPanel() {
                     </div>
                     <div className="flex items-center gap-2">
                       {response?.duration && (
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-white/40">
                           {response.duration}ms
                         </span>
                       )}
                       {status === 'thinking' && (
                         <button
-                          onClick={() => cancelModel(model.id)}
-                          className="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded"
+                          onClick={() => cancelModel(modelItem.id)}
+                          className="text-xs px-2 py-1 glass text-sm cursor-pointer"
                         >
                           取消
                         </button>
                       )}
                       {(status === 'error' || status === 'completed') && (
                         <button
-                          onClick={() => retryModel(model.id, '请重试')}
-                          className="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded"
+                          onClick={() => retryModel(modelItem.id, '请重试')}
+                          className="text-xs px-2 py-1 glass text-sm cursor-pointer"
                         >
                           重试
                         </button>
@@ -312,10 +302,10 @@ export default function ComparisonPanel() {
                   </div>
 
                   {/* 内容区域 */}
-                  <div className="flex-1 p-4 overflow-y-auto">
+                  <div className="flex-1 p-4 overflow-y-auto scrollbar-aurora">
                     {status === 'thinking' && (
-                      <div className="flex items-center gap-2 text-gray-400">
-                        <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full" />
+                      <div className="flex items-center gap-2 text-white/50">
+                        <div className="w-4 h-4 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
                         <span>生成中...</span>
                       </div>
                     )}
@@ -328,7 +318,7 @@ export default function ComparisonPanel() {
                       </div>
                     )}
                     {status === 'idle' && (
-                      <div className="text-gray-500 text-sm">等待输入...</div>
+                      <div className="text-white/40 text-sm">等待输入...</div>
                     )}
                   </div>
                 </div>

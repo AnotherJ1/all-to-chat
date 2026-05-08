@@ -59,24 +59,22 @@ export default function ImageGenerator({ onClose }: ImageGeneratorProps) {
   const handleDownload = () => {
     if (!currentImage) return
 
-    // 如果是 data URL，转换为 blob 下载
     if (currentImage.startsWith('data:')) {
       const link = document.createElement('a')
       link.href = currentImage
       link.download = `generated-image-${Date.now()}.png`
       link.click()
     } else {
-      // 外部 URL，尝试新窗口打开下载
       window.open(currentImage, '_blank')
     }
   }
 
   return (
-    <div className="bg-gray-800 rounded-lg p-4 h-full flex flex-col">
+    <div className="glass-card rounded-xl p-4 h-full flex flex-col">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold">图片生成</h2>
         {onClose && (
-          <button onClick={onClose} className="text-gray-400 hover:text-white">
+          <button onClick={onClose} className="text-white/50 hover:text-white/80 transition-colors cursor-pointer">
             ×
           </button>
         )}
@@ -90,10 +88,10 @@ export default function ImageGenerator({ onClose }: ImageGeneratorProps) {
             <button
               key={p}
               onClick={() => handleProviderChange(p)}
-              className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-sm transition-colors cursor-pointer ${
                 provider === p
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-400/30'
+                  : 'bg-white/5 text-white/60 hover:text-white/80 border border-transparent hover:border-white/10'
               }`}
             >
               {p === 'dalle' ? 'DALL-E' : p === 'imagen' ? 'Imagen' : 'Flux'}
@@ -110,7 +108,7 @@ export default function ImageGenerator({ onClose }: ImageGeneratorProps) {
           value={model}
           onChange={(e) => setModel(e.target.value)}
           placeholder={`输入模型名称，如 ${getDefaultModel(provider)}`}
-          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500"
+          className="input-aurora"
         />
       </div>
 
@@ -121,13 +119,13 @@ export default function ImageGenerator({ onClose }: ImageGeneratorProps) {
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="描述你想要生成的图片..."
-          className="w-full h-32 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 resize-none"
+          className="input-aurora h-32 resize-none"
         />
       </div>
 
       {/* 错误提示 */}
       {error && (
-        <div className="mb-4 p-2 bg-red-500/20 border border-red-500 rounded text-red-400 text-sm">
+        <div className="mb-4 p-2 bg-red-500/20 border border-red-500/30 rounded-lg text-red-400 text-sm">
           {error}
         </div>
       )}
@@ -139,11 +137,11 @@ export default function ImageGenerator({ onClose }: ImageGeneratorProps) {
             <img
               src={currentImage}
               alt="Generated"
-              className="w-full rounded-lg border border-gray-600"
+              className="w-full rounded-xl border border-white/10"
             />
             <button
               onClick={handleDownload}
-              className="absolute bottom-2 right-2 px-3 py-1.5 bg-gray-900/80 hover:bg-gray-900 rounded-lg text-sm transition-colors"
+              className="absolute bottom-2 right-2 px-3 py-1.5 bg-black/60 hover:bg-black/80 rounded-lg text-sm transition-colors cursor-pointer"
             >
               下载
             </button>
@@ -155,7 +153,7 @@ export default function ImageGenerator({ onClose }: ImageGeneratorProps) {
       <button
         onClick={handleGenerate}
         disabled={isGenerating || !prompt.trim()}
-        className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg font-medium transition-colors"
+        className="btn-aurora btn-aurora-primary w-full"
       >
         {isGenerating ? '生成中...' : '生成图片'}
       </button>
