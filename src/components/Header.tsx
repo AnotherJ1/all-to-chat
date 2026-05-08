@@ -106,8 +106,8 @@ export default function Header() {
           onClick={(e) => e.target === e.currentTarget && setShowSettings(false)}
         >
           <div
-            className="glass-card w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col"
-            style={{ border: '1px solid var(--border-color)' }}
+            className="w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col rounded-2xl"
+            style={{ background: 'rgba(10, 10, 25, 0.98)', border: '1px solid rgba(255, 255, 255, 0.1)' }}
           >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-white/10">
