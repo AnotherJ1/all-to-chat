@@ -1,4 +1,4 @@
-import { ComponentType, LazyExoticComponent } from 'react'
+import { ComponentType, LazyExoticComponent, CSSProperties } from 'react'
 
 // 工具元数据类型
 export interface ToolMeta {
@@ -9,7 +9,7 @@ export interface ToolMeta {
   /** 工具简短描述 */
   description: string
   /** 工具图标组件 */
-  icon: ComponentType<{ className?: string }>
+  icon: ComponentType<{ className?: string; style?: CSSProperties }>
   /** 路由路径（如 '/chat'） */
   route: string
   /** 懒加载的页面组件 */

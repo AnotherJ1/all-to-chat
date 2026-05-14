@@ -17,7 +17,7 @@ export default function ChatMessage({ message, onRegenerate, onDelete }: ChatMes
   const [copied, setCopied] = useState(false)
 
   const markdownComponents = useMemo(() => ({
-    pre: ({ children }: { children: React.ReactNode }) => (
+    pre: ({ children }: { children?: React.ReactNode }) => (
       <pre style={{
         background: 'var(--bg-secondary)',
         border: 'var(--border-width) solid var(--border-color)',
@@ -29,7 +29,7 @@ export default function ChatMessage({ message, onRegenerate, onDelete }: ChatMes
         {children}
       </pre>
     ),
-    code: ({ className, children, ...props }: { className?: string; children: React.ReactNode }) => {
+    code: ({ className, children, ...props }: { className?: string; children?: React.ReactNode }) => {
       const isBlock = className?.includes('language-')
       if (isBlock) {
         return (
@@ -51,24 +51,24 @@ export default function ChatMessage({ message, onRegenerate, onDelete }: ChatMes
         </code>
       )
     },
-    a: ({ href, children }: { href?: string; children: React.ReactNode }) => (
+    a: ({ href, children }: { href?: string; children?: React.ReactNode }) => (
       <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-1)', textDecoration: 'underline' }}>
         {children}
       </a>
     ),
-    table: ({ children }: { children: React.ReactNode }) => (
+    table: ({ children }: { children?: React.ReactNode }) => (
       <div style={{ overflowX: 'auto', margin: '12px 0' }}>
         <table style={{ minWidth: '100%', borderCollapse: 'collapse', border: 'var(--border-width) solid var(--border-color)', fontSize: '14px' }}>
           {children}
         </table>
       </div>
     ),
-    th: ({ children }: { children: React.ReactNode }) => (
+    th: ({ children }: { children?: React.ReactNode }) => (
       <th style={{ border: 'var(--border-width) solid var(--border-color)', padding: '8px 12px', background: 'var(--bg-secondary)', textAlign: 'left' as const, fontWeight: 600 }}>
         {children}
       </th>
     ),
-    td: ({ children }: { children: React.ReactNode }) => (
+    td: ({ children }: { children?: React.ReactNode }) => (
       <td style={{ border: 'var(--border-width) solid var(--border-color)', padding: '8px 12px' }}>
         {children}
       </td>

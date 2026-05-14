@@ -1,5 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react'
-import { useSessionStore } from '../../stores/sessionStore'
+import { useState, useRef, useEffect } from 'react'
 import { useConfigStore } from '../../stores/configStore'
 import { callApi } from '../../api'
 import { fetchModelList } from '../../api/openai'
