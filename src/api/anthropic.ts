@@ -1,5 +1,6 @@
-// Anthropic API 调用（支持流式输出）
+// Anthropic API 调用（支持流式输出 + 原生 system 字段）
 import type { Message } from '../types'
+import { parseSSEStream } from '../lib/sse'
 
 interface AnthropicMessagesOptions {
   url: string
@@ -8,6 +9,7 @@ interface AnthropicMessagesOptions {
   messages: Message[]
   systemPrompt?: string
   streaming?: boolean
+  signal?: AbortSignal
   onChunk?: (chunk: string) => void
   onComplete?: () => void
   onError?: (error: Error) => void
@@ -20,23 +22,30 @@ export async function anthropicMessages({
   messages,
   systemPrompt,
   streaming = true,
+  signal,
   onChunk,
   onComplete,
   onError,
 }: AnthropicMessagesOptions): Promise<string> {
-  // 构建消息，Anthropic 格式
+  // Anthropic 格式: system 是顶层字段,messages 只有 user/assistant
   const allMessages: { role: 'user' | 'assistant'; content: string }[] = []
-  if (systemPrompt) {
-    allMessages.push({
-      role: 'user',
-      content: `<system>\n${systemPrompt}\n</system>`,
-    })
-  }
   for (const msg of messages) {
+    if (msg.role === 'system') continue
     allMessages.push({
       role: msg.role === 'assistant' ? 'assistant' : 'user',
       content: msg.content,
     })
+  }
+
+  const body: Record<string, unknown> = {
+    model,
+    messages: allMessages,
+    max_tokens: 4096,
+    stream: streaming,
+  }
+  // 使用原生 system 字段
+  if (systemPrompt) {
+    body.system = systemPrompt
   }
 
   try {
@@ -46,14 +55,9 @@ export async function anthropicMessages({
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
-        'anthropic-beta': 'interleaved-thinking-2025-05-14',
       },
-      body: JSON.stringify({
-        model,
-        messages: allMessages,
-        max_tokens: 4096,
-        stream: streaming,
-      }),
+      body: JSON.stringify(body),
+      signal,
     })
 
     if (!response.ok) {
@@ -63,50 +67,37 @@ export async function anthropicMessages({
 
     if (!streaming) {
       const data = await response.json()
-      return data.content?.[0]?.text || ''
+      const content = data.content?.[0]?.text || ''
+      onChunk?.(content)
+      onComplete?.()
+      return content
     }
 
-    // 流式处理
-    const reader = response.body?.getReader()
-    if (!reader) {
-      throw new Error('无法读取响应流')
-    }
+    if (!response.body) throw new Error('无法读取响应流')
 
-    const decoder = new TextDecoder()
     let fullContent = ''
-
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-
-      const chunk = decoder.decode(value, { stream: true })
-      const lines = chunk.split('\n')
-
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const data = line.slice(6)
-          if (data === '[DONE]') continue
-
-          try {
-            const parsed = JSON.parse(data)
-            if (parsed.type === 'content_block_delta') {
-              const content = parsed.delta?.text
-              if (content) {
-                fullContent += content
-                onChunk?.(content)
-              }
-            }
-          } catch {
-            // 忽略解析错误
+    for await (const event of parseSSEStream(response.body, signal)) {
+      if (event.data === '[DONE]') break
+      try {
+        const parsed = JSON.parse(event.data)
+        if (parsed.type === 'content_block_delta') {
+          const content = parsed.delta?.text
+          if (content) {
+            fullContent += content
+            onChunk?.(content)
           }
         }
+      } catch {
+        // 忽略解析错误
       }
     }
 
     onComplete?.()
     return fullContent
   } catch (error) {
-    onError?.(error as Error)
+    if ((error as Error).name !== 'AbortError') {
+      onError?.(error as Error)
+    }
     throw error
   }
 }

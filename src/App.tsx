@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
 import Layout from './components/Layout'
 import ChatView from './components/ChatView'
+import ToastContainer from './components/Toast'
+import ErrorBoundary from './components/ErrorBoundary'
 import { useConfigStore } from './stores/configStore'
 import { useSessionStore } from './stores/sessionStore'
 
@@ -21,8 +23,11 @@ export default function App() {
   }, [theme])
 
   return (
-    <Layout>
-      <ChatView />
-    </Layout>
+    <ErrorBoundary>
+      <Layout>
+        <ChatView />
+      </Layout>
+      <ToastContainer />
+    </ErrorBoundary>
   )
 }

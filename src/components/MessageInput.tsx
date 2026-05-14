@@ -2,24 +2,19 @@ import { useState, useRef, useEffect } from 'react'
 import { useSessionStore } from '../stores/sessionStore'
 import { useConfigStore } from '../stores/configStore'
 import { callApi } from '../api'
+import { toast } from '../stores/toastStore'
+import { uuid } from '../lib/uuid'
+import { IconSend, IconStop } from './Icons'
 import type { Message } from '../types'
 
 export default function MessageInput() {
   const [input, setInput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
-  const [streamingContent, setStreamingContent] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const streamingRef = useRef<HTMLDivElement>(null)
-  const { protocol, getCurrentConfig } = useConfigStore()
-  const { baseUrl, apiKey, model } = getCurrentConfig()
-  const { getCurrentSession, addMessage, updateMessage, updateSessionTitle } = useSessionStore()
-  const currentSession = getCurrentSession()
-  const currentSessionRef = useRef(currentSession)
-  const streamingContentRef = useRef('')
+  const abortRef = useRef<AbortController | null>(null)
 
-  useEffect(() => {
-    currentSessionRef.current = currentSession
-  }, [currentSession])
+  const { protocol, getCurrentConfig } = useConfigStore()
+  const { getCurrentSession, addMessage, updateMessage, updateSessionTitle } = useSessionStore()
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -28,73 +23,86 @@ export default function MessageInput() {
     }
   }, [input])
 
-  useEffect(() => {
-    if (streamingRef.current) {
-      streamingRef.current.scrollIntoView({ behavior: 'smooth' })
-    }
-  }, [streamingContent])
+  const handleStop = () => {
+    abortRef.current?.abort()
+    abortRef.current = null
+    setIsStreaming(false)
+  }
 
   const handleSend = async () => {
-    if (!input.trim() || !currentSessionRef.current || isStreaming) return
+    const currentSession = getCurrentSession()
+    if (!input.trim() || !currentSession || isStreaming) return
+
+    const { baseUrl, apiKey, model, systemPrompt } = getCurrentConfig()
+    if (!apiKey) {
+      toast.error('请先在设置中配置 API Key')
+      return
+    }
 
     const userMessage: Message = {
-      id: crypto.randomUUID(),
+      id: uuid(),
       role: 'user',
       content: input.trim(),
       timestamp: Date.now(),
     }
 
-    const session = currentSessionRef.current
-    addMessage(session.id, userMessage)
+    const sessionId = currentSession.id
+    addMessage(sessionId, userMessage)
 
     const userInput = input
     setInput('')
 
-    setIsStreaming(true)
-    setStreamingContent('')
-    streamingContentRef.current = ''
-
+    // 创建 assistant 占位消息
+    const assistantId = uuid()
     const assistantMessage: Message = {
-      id: crypto.randomUUID(),
+      id: assistantId,
       role: 'assistant',
       content: '',
       timestamp: Date.now(),
     }
-    addMessage(session.id, assistantMessage)
-    const assistantMessageId = assistantMessage.id
+    addMessage(sessionId, assistantMessage)
+
+    setIsStreaming(true)
+    const controller = new AbortController()
+    abortRef.current = controller
 
     try {
-      const systemPrompt = localStorage.getItem(`systemPrompt-${protocol}`) || undefined
-
       await callApi({
         protocol,
         baseUrl,
         apiKey,
         model,
-        messages: [...session.messages, userMessage],
-        systemPrompt,
+        messages: [...currentSession.messages, userMessage],
+        systemPrompt: systemPrompt || undefined,
         streaming: true,
+        signal: controller.signal,
         onChunk: (chunk) => {
-          streamingContentRef.current += chunk
-          setStreamingContent((prev) => prev + chunk)
+          // 直接更新 assistant 消息内容(边流边写)
+          const session = useSessionStore.getState().sessions.find((s) => s.id === sessionId)
+          const msg = session?.messages.find((m) => m.id === assistantId)
+          const newContent = (msg?.content || '') + chunk
+          updateMessage(sessionId, assistantId, newContent)
         },
         onComplete: () => {
-          updateMessage(session.id, assistantMessageId, streamingContentRef.current)
-          if (session.messages.length === 0 && session.title === '新对话') {
+          // 自动生成标题
+          if (currentSession.messages.length === 0 && currentSession.title === '新对话') {
             const title = userInput.slice(0, 20) + (userInput.length > 20 ? '...' : '')
-            updateSessionTitle(session.id, title || '新对话')
+            updateSessionTitle(sessionId, title || '新对话')
           }
-          setStreamingContent('')
-          setIsStreaming(false)
         },
-        onError: () => {
-          setStreamingContent('')
-          setIsStreaming(false)
+        onError: (error) => {
+          toast.error(`请求失败: ${error.message}`)
         },
       })
-    } catch {
-      setStreamingContent('')
+    } catch (error) {
+      if ((error as Error).name === 'AbortError') {
+        toast.info('已停止生成')
+      } else {
+        toast.error(`请求失败: ${(error as Error).message}`)
+      }
+    } finally {
       setIsStreaming(false)
+      abortRef.current = null
     }
   }
 
@@ -106,51 +114,37 @@ export default function MessageInput() {
   }
 
   return (
-    <div className="relative px-6 py-4">
-      {/* Streaming Preview */}
-      {isStreaming && streamingContent && (
-        <div
-          ref={streamingRef}
-          className="mb-4 p-4 rounded-2xl bg-black/40 border border-cyan-400/20 backdrop-blur-sm max-h-64 overflow-y-auto scrollbar-aurora"
-        >
-          <div className="text-white/90 leading-relaxed whitespace-pre-wrap">{streamingContent}</div>
-          <div className="flex items-center gap-1 mt-2">
-            <div className="typing-dot" />
-            <div className="typing-dot" />
-            <div className="typing-dot" />
-          </div>
-        </div>
-      )}
-
-      {/* Input Area */}
-      <div className="relative glass-card p-2">
+    <div className="relative">
+      <div className="glass-card p-2" style={{ transform: 'none' }}>
         <div className="flex items-end gap-3">
           <textarea
             ref={textareaRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="输入消息... (Enter 发送，Shift+Enter 换行)"
+            placeholder="输入消息... (Enter 发送, Shift+Enter 换行)"
             disabled={isStreaming}
-            className="flex-1 bg-transparent border-none outline-none text-white placeholder-white/30 resize-none px-4 py-3 min-h-[48px] max-h-[150px]"
+            className="flex-1 bg-transparent border-none outline-none text-[var(--text-primary)] placeholder-[var(--text-muted)] resize-none px-4 py-3 min-h-[48px] max-h-[150px]"
             rows={1}
           />
-          <button
-            onClick={handleSend}
-            disabled={!input.trim() || isStreaming}
-            className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-400/30 to-purple-500/30 border border-cyan-400/30 flex items-center justify-center hover:from-cyan-400/40 hover:to-purple-500/40 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-          >
-            {isStreaming ? (
-              <svg className="w-5 h-5 animate-spin text-cyan-400" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-            ) : (
-              <svg className="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19V5m0 0l-7 7m7-7l7 7" />
-              </svg>
-            )}
-          </button>
+          {isStreaming ? (
+            <button
+              onClick={handleStop}
+              className="w-12 h-12 rounded-xl bg-red-500/20 border border-red-400/30 flex items-center justify-center hover:bg-red-500/30 transition-all cursor-pointer"
+              title="停止生成"
+            >
+              <IconStop className="w-5 h-5 text-red-400" />
+            </button>
+          ) : (
+            <button
+              onClick={handleSend}
+              disabled={!input.trim()}
+              className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-400/30 to-purple-500/30 border border-cyan-400/30 flex items-center justify-center hover:from-cyan-400/40 hover:to-purple-500/40 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              title="发送"
+            >
+              <IconSend className="w-5 h-5 text-cyan-400" />
+            </button>
+          )}
         </div>
       </div>
     </div>

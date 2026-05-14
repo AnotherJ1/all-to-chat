@@ -1,6 +1,7 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useConfigStore } from '../stores/configStore'
 import { fetchModelList } from '../api/openai'
+import { IconSun, IconMoon, IconSettings, IconClose } from './Icons'
 import type { Protocol } from '../types'
 
 const PROTOCOLS: { value: Protocol; label: string; icon: string }[] = [
@@ -30,6 +31,7 @@ export default function Header() {
   const [showSaveInput, setShowSaveInput] = useState(false)
   const [configName, setConfigName] = useState('')
   const [activeTab, setActiveTab] = useState<'config' | 'saved'>('config')
+  const [showModelList, setShowModelList] = useState(false)
 
   const currentConfig = getCurrentConfig()
   const protocolSavedConfigs = getConfigsByProtocol(protocol)
@@ -42,11 +44,7 @@ export default function Header() {
       const list = await fetchModelList(baseUrl, apiKey)
       if (list.length > 0) {
         setModels(list)
-        const { model } = currentConfig
-        const setModel = useConfigStore.getState().setModel
-        if (!list.includes(model)) {
-          setModel(list[0])
-        }
+        setShowModelList(true)
       }
     } catch {
       console.error('Failed to fetch models')
@@ -65,66 +63,77 @@ export default function Header() {
 
   return (
     <>
-      <header className="glass border-b border-white/10 px-6 py-4 flex items-center justify-between relative z-40">
+      <header className="glass border-b border-[var(--border-color)] px-6 py-4 flex items-center justify-between relative z-40">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400/20 to-purple-500/20 border border-cyan-400/30 flex items-center justify-center">
             <span className="text-cyan-400 text-lg font-bold">AI</span>
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-white tracking-tight">AI Chat Hub</h1>
-            <p className="text-xs text-white/40">多协议 · 多模型 · 智能对话</p>
+            <h1 className="text-lg font-semibold text-[var(--text-primary)] tracking-tight">AI Chat Hub</h1>
+            <p className="text-xs text-[var(--text-muted)]">
+              {PROTOCOLS.find(p => p.value === protocol)?.label} · {currentConfig.model}
+            </p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="w-10 h-10 rounded-xl glass flex items-center justify-center hover:bg-white/10 transition-all cursor-pointer"
+            className="w-10 h-10 rounded-xl glass flex items-center justify-center hover:bg-[var(--glass-bg-hover)] transition-all cursor-pointer"
             title="切换主题"
           >
-            <span className="text-white/60">{theme === 'dark' ? '☀️' : '🌙'}</span>
+            {theme === 'dark' ? (
+              <IconSun className="w-5 h-5 text-[var(--text-secondary)]" />
+            ) : (
+              <IconMoon className="w-5 h-5 text-[var(--text-secondary)]" />
+            )}
           </button>
 
           <button
             onClick={() => setShowSettings(true)}
-            className="w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer glass hover:bg-white/10"
+            className="w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer glass hover:bg-[var(--glass-bg-hover)]"
             title="设置"
           >
-            <svg className="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
+            <IconSettings className="w-5 h-5 text-[var(--text-secondary)]" />
           </button>
         </div>
       </header>
 
       {/* Settings Modal */}
       {showSettings && (
-        <div
-          className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-          style={{ background: 'rgba(5, 5, 16, 0.8)', backdropFilter: 'blur(8px)' }}
-          onClick={(e) => e.target === e.currentTarget && setShowSettings(false)}
-        >
-          <div className="w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col rounded-2xl glass-card">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div
+            className="fixed inset-0 bg-black/40 dark:bg-black/70"
+            style={{ backdropFilter: 'blur(8px)' }}
+            onClick={() => setShowSettings(false)}
+            aria-hidden="true"
+          />
+          <div
+            className="relative w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col rounded-2xl border border-[var(--border-color)] shadow-2xl"
+            style={{ transform: 'none', background: 'var(--bg-primary)' }}
+            role="dialog"
+            aria-modal="true"
+            aria-label="API 配置"
+          >
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-white/10">
-              <h2 className="text-xl font-semibold">API 配置</h2>
+            <div className="flex items-center justify-between p-6 border-b border-[var(--border-color)]">
+              <h2 className="text-xl font-semibold text-[var(--text-primary)]">API 配置</h2>
               <button
                 onClick={() => setShowSettings(false)}
-                className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center cursor-pointer transition-colors"
+                className="w-8 h-8 rounded-lg hover:bg-[var(--glass-bg-hover)] flex items-center justify-center cursor-pointer transition-colors"
               >
-                <span className="text-white/60">×</span>
+                <IconClose className="w-4 h-4 text-[var(--text-secondary)]" />
               </button>
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-1 p-4 border-b border-white/10 bg-white/[0.02]">
+            <div className="flex gap-1 p-4 border-b border-[var(--border-color)] bg-[var(--glass-bg)]">
               <button
                 onClick={() => setActiveTab('config')}
                 className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                   activeTab === 'config'
                     ? 'bg-gradient-to-br from-cyan-400/25 to-purple-500/25 text-cyan-400'
-                    : 'text-white/50 hover:text-white/70'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
                 当前配置
@@ -134,7 +143,7 @@ export default function Header() {
                 className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                   activeTab === 'saved'
                     ? 'bg-gradient-to-br from-cyan-400/25 to-purple-500/25 text-cyan-400'
-                    : 'text-white/50 hover:text-white/70'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
                 保存的配置 ({savedConfigs.length})
@@ -142,12 +151,12 @@ export default function Header() {
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-6 scrollbar-aurora" onClick={() => setShowModelList(false)}>
               {activeTab === 'config' ? (
                 <div className="space-y-6">
                   {/* Protocol Selector */}
                   <div>
-                    <label className="block text-sm font-medium text-white/60 mb-3">协议</label>
+                    <label className="block text-sm font-medium text-[var(--text-primary)] mb-3">协议</label>
                     <div className="grid grid-cols-3 gap-3">
                       {PROTOCOLS.map((p) => (
                         <button
@@ -156,7 +165,7 @@ export default function Header() {
                           className={`py-4 px-4 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                             protocol === p.value
                               ? 'bg-gradient-to-br from-cyan-400/25 to-purple-500/25 border border-cyan-400/40 text-cyan-400'
-                              : 'glass-card border border-transparent hover:border-white/15'
+                              : 'border border-[var(--border-color)] hover:border-[var(--border-hover)]'
                           }`}
                         >
                           <span className="block text-xl mb-1">{p.icon}</span>
@@ -168,7 +177,7 @@ export default function Header() {
 
                   {/* Base URL */}
                   <div>
-                    <label className="block text-sm font-medium text-white/60 mb-2">Base URL</label>
+                    <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">Base URL</label>
                     <input
                       type="text"
                       value={currentConfig.baseUrl}
@@ -180,7 +189,7 @@ export default function Header() {
 
                   {/* API Key */}
                   <div>
-                    <label className="block text-sm font-medium text-white/60 mb-2">API Key</label>
+                    <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">API Key</label>
                     <input
                       type="password"
                       value={currentConfig.apiKey}
@@ -192,33 +201,44 @@ export default function Header() {
 
                   {/* Model */}
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="text-sm font-medium text-white/60">模型</label>
+                    <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">模型</label>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 relative">
+                        <input
+                          type="text"
+                          value={currentConfig.model}
+                          onChange={(e) => useConfigStore.getState().setModel(e.target.value)}
+                          onFocus={() => models.length > 0 && setShowModelList(true)}
+                          placeholder="输入模型名称"
+                          className="input-aurora"
+                        />
+                        {showModelList && models.length > 0 && (
+                          <div className="absolute top-full left-0 right-0 mt-1 z-50 max-h-48 overflow-y-auto rounded-xl border border-[var(--border-color)] shadow-lg scrollbar-aurora" style={{ background: 'var(--bg-primary)' }}>
+                            {models.map((m) => (
+                              <button
+                                key={m}
+                                onClick={() => {
+                                  useConfigStore.getState().setModel(m)
+                                  setShowModelList(false)
+                                }}
+                                className={`w-full text-left px-4 py-2.5 text-sm transition-colors cursor-pointer hover:bg-[var(--glass-bg-hover)] ${
+                                  currentConfig.model === m ? 'text-cyan-400 bg-cyan-400/5' : 'text-[var(--text-primary)]'
+                                }`}
+                              >
+                                {m}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                       <button
                         onClick={loadModels}
                         disabled={loadingModels || !currentConfig.apiKey}
-                        className="text-xs text-cyan-400/70 hover:text-cyan-400 transition-colors disabled:opacity-50 cursor-pointer"
+                        className="btn-aurora text-xs py-2.5 px-3 whitespace-nowrap disabled:opacity-50"
                       >
-                        {loadingModels ? '加载中...' : '刷新列表'}
+                        {loadingModels ? '加载中...' : '获取模型'}
                       </button>
                     </div>
-                    <input
-                      type="text"
-                      value={currentConfig.model}
-                      onChange={(e) => useConfigStore.getState().setModel(e.target.value)}
-                      placeholder="输入或选择模型"
-                      className="input-aurora"
-                      list="model-suggestions"
-                    />
-                    {models.length > 0 && (
-                      <datalist id="model-suggestions">
-                        {models.map((m) => (
-                          <option key={m} value={m}>
-                            {m}
-                          </option>
-                        ))}
-                      </datalist>
-                    )}
                   </div>
 
                   {/* Save Button */}
@@ -247,7 +267,7 @@ export default function Header() {
                     ) : (
                       <button
                         onClick={() => setShowSaveInput(true)}
-                        className="w-full py-3 rounded-xl border border-dashed border-white/20 text-white/50 text-sm hover:border-cyan-400/40 hover:text-cyan-400/70 transition-all cursor-pointer"
+                        className="w-full py-3 rounded-xl border border-dashed border-[var(--border-hover)] text-[var(--text-muted)] text-sm hover:border-cyan-400/40 hover:text-cyan-400/70 transition-all cursor-pointer"
                       >
                         + 保存当前配置
                       </button>
@@ -257,52 +277,47 @@ export default function Header() {
               ) : (
                 <div className="space-y-3">
                   {protocolSavedConfigs.length === 0 ? (
-                    <div className="text-center py-12 text-white/40">
+                    <div className="text-center py-12 text-[var(--text-muted)]">
                       暂无保存的 {PROTOCOLS.find(p => p.value === protocol)?.label} 配置
                     </div>
                   ) : (
                     protocolSavedConfigs.map((sc) => (
                       <div
                         key={sc.id}
-                        className={`p-4 rounded-xl border transition-all ${
+                        className={`p-4 rounded-xl border transition-colors ${
                           activeConfigId === sc.id
                             ? 'bg-cyan-400/10 border-cyan-400/30'
-                            : 'glass-card border-transparent hover:border-white/15'
+                            : 'border-[var(--border-color)] hover:border-[var(--border-hover)]'
                         }`}
+                        style={{ transform: 'none' }}
                       >
                         <div className="flex items-start justify-between mb-2">
                           <div>
-                            <div className="text-white font-medium">{sc.name}</div>
-                            <div className="text-white/40 text-xs mt-0.5">
+                            <div className="text-[var(--text-primary)] font-medium">{sc.name}</div>
+                            <div className="text-[var(--text-muted)] text-xs mt-0.5">
                               {PROTOCOLS.find(p => p.value === sc.protocol)?.label} ·{' '}
                               {new Date(sc.createdAt).toLocaleDateString('zh-CN')}
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={() => { loadConfig(sc.id); setActiveTab('config'); }}
-                              className="px-4 py-1.5 rounded-lg text-sm glass-card text-white/70 hover:text-cyan-400 transition-all cursor-pointer"
+                              onClick={() => { loadConfig(sc.id); setActiveTab('config') }}
+                              className="px-4 py-1.5 rounded-lg text-sm border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-cyan-400 hover:border-cyan-400/30 transition-all cursor-pointer"
                             >
                               加载
                             </button>
                             <button
                               onClick={() => deleteConfig(sc.id)}
-                              className="px-4 py-1.5 rounded-lg text-sm glass-card text-white/40 hover:text-red-400 transition-all cursor-pointer"
+                              className="px-4 py-1.5 rounded-lg text-sm border border-[var(--border-color)] text-[var(--text-muted)] hover:text-red-400 hover:border-red-400/30 transition-all cursor-pointer"
                             >
                               删除
                             </button>
                           </div>
                         </div>
-                        <div className="text-white/50 text-sm truncate">{sc.config.baseUrl}</div>
-                        <div className="text-white/30 text-sm truncate mt-0.5">模型: {sc.config.model}</div>
+                        <div className="text-[var(--text-muted)] text-sm truncate">{sc.config.baseUrl}</div>
+                        <div className="text-[var(--text-muted)] text-sm truncate mt-0.5 opacity-60">模型: {sc.config.model}</div>
                       </div>
                     ))
-                  )}
-
-                  {savedConfigs.length > 0 && protocolSavedConfigs.length === 0 && (
-                    <div className="text-center py-4 text-white/30 text-sm">
-                      其他协议的已保存配置在切换协议后可见
-                    </div>
                   )}
                 </div>
               )}

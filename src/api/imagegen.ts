@@ -1,12 +1,4 @@
-// 图片生成API - 支持 DALL-E, Imagen, Flux
-
-export interface ImageGenerationRequest {
-  baseUrl: string
-  apiKey: string
-  model: string
-  prompt: string
-  provider: 'dalle' | 'imagen' | 'flux'
-}
+// 图片生成API - 支持 DALL-E/OpenAI兼容, Imagen, Flux
 
 export interface ImageGenerationResult {
   success: boolean
@@ -14,7 +6,30 @@ export interface ImageGenerationResult {
   error?: string
 }
 
-// DALL-E 图片生成 (OpenAI 兼容)
+/**
+ * 解析图片生成响应(OpenAI 兼容格式)
+ * 支持返回 url 或 b64_json,也处理代理返回的 message 错误
+ */
+function parseImageResponse(data: Record<string, unknown>): ImageGenerationResult {
+  // 代理可能返回 message 字段表示错误(如内容策略拒绝)
+  if (!data.data || !Array.isArray(data.data) || data.data.length === 0) {
+    const msg = (data as { message?: string }).message
+    return { success: false, error: msg || '未返回图片数据' }
+  }
+
+  const item = (data.data as Record<string, string>[])[0]
+  // 优先使用 url(代理已存储的图片地址),其次用 b64_json
+  if (item?.url) {
+    return { success: true, imageUrl: item.url }
+  }
+  if (item?.b64_json) {
+    return { success: true, imageUrl: `data:image/png;base64,${item.b64_json}` }
+  }
+  return { success: false, error: '未返回图片数据' }
+}
+
+// DALL-E / OpenAI 兼容图片生成
+// 适用于: OpenAI 官方、NewAPI/OneAPI 代理、chatgpt2api 等
 async function generateWithDalle(
   baseUrl: string,
   apiKey: string,
@@ -22,29 +37,34 @@ async function generateWithDalle(
   prompt: string
 ): Promise<ImageGenerationResult> {
   try {
-    const response = await fetch(`${baseUrl}/images/generations`, {
+    const base = baseUrl.replace(/\/$/, '')
+    const response = await fetch(`${base}/v1/images/generations`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: model || 'dall-e-3',
+        model: model || 'gpt-image-2',
         prompt,
         n: 1,
         size: '1024x1024',
+        response_format: 'b64_json',
       }),
     })
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
-      return { success: false, error: errorData.error?.message || `HTTP ${response.status}` }
+      const errMsg = (errorData as { error?: { message?: string }; detail?: { error?: string } }).error?.message
+        || (errorData as { detail?: { error?: string } }).detail?.error
+        || `HTTP ${response.status}`
+      return { success: false, error: errMsg }
     }
 
     const data = await response.json()
-    return { success: true, imageUrl: data.data[0]?.url }
+    return parseImageResponse(data)
   } catch (error) {
-    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+    return { success: false, error: error instanceof Error ? error.message : '网络错误' }
   }
 }
 
@@ -55,16 +75,13 @@ async function generateWithImagen(
   prompt: string
 ): Promise<ImageGenerationResult> {
   try {
-    // Imagen 使用 Vertex AI 或 Google AI API
     const endpoint = baseUrl.includes('vertexai')
       ? `${baseUrl}/images:generate`
       : `https://generativelanguage.googleapis.com/v1beta/models/imagen-3-generate:generateImage`
 
     const response = await fetch(`${endpoint}?key=${apiKey}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         prompt,
         numberOfImages: 1,
@@ -75,22 +92,21 @@ async function generateWithImagen(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
-      return { success: false, error: errorData.error?.message || `HTTP ${response.status}` }
+      return { success: false, error: (errorData as { error?: { message?: string } }).error?.message || `HTTP ${response.status}` }
     }
 
     const data = await response.json()
-    // Imagen 返回 base64 编码的图片或 URL
     const imageData = data.images?.[0]?.image?.bytesBase64Encoded
     if (imageData) {
       return { success: true, imageUrl: `data:image/png;base64,${imageData}` }
     }
-    return { success: false, error: 'No image returned' }
+    return { success: false, error: '未返回图片数据' }
   } catch (error) {
-    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+    return { success: false, error: error instanceof Error ? error.message : '网络错误' }
   }
 }
 
-// Flux 图片生成 (通常通过 Replicate 或 OpenAI 兼容 API)
+// Flux 图片生成 (OpenAI 兼容端点)
 async function generateWithFlux(
   baseUrl: string,
   apiKey: string,
@@ -98,8 +114,8 @@ async function generateWithFlux(
   prompt: string
 ): Promise<ImageGenerationResult> {
   try {
-    // Flux 通常使用 Replicate API 或 OpenAI 兼容端点
-    const response = await fetch(`${baseUrl}/images/generations`, {
+    const base = baseUrl.replace(/\/$/, '')
+    const response = await fetch(`${base}/v1/images/generations`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -110,18 +126,22 @@ async function generateWithFlux(
         prompt,
         n: 1,
         size: '1024x1024',
+        response_format: 'b64_json',
       }),
     })
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
-      return { success: false, error: errorData.error?.message || `HTTP ${response.status}` }
+      const errMsg = (errorData as { error?: { message?: string }; detail?: { error?: string } }).error?.message
+        || (errorData as { detail?: { error?: string } }).detail?.error
+        || `HTTP ${response.status}`
+      return { success: false, error: errMsg }
     }
 
     const data = await response.json()
-    return { success: true, imageUrl: data.data[0]?.url }
+    return parseImageResponse(data)
   } catch (error) {
-    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+    return { success: false, error: error instanceof Error ? error.message : '网络错误' }
   }
 }
 
@@ -141,7 +161,7 @@ export async function generateImage(
     case 'flux':
       return generateWithFlux(baseUrl, apiKey, model, prompt)
     default:
-      return { success: false, error: `Unknown provider: ${provider}` }
+      return { success: false, error: `不支持的提供商: ${provider}` }
   }
 }
 
@@ -149,12 +169,12 @@ export async function generateImage(
 export function getDefaultModel(provider: 'dalle' | 'imagen' | 'flux'): string {
   switch (provider) {
     case 'dalle':
-      return 'dall-e-3'
+      return 'gpt-image-2'
     case 'imagen':
       return 'imagen-3'
     case 'flux':
       return 'flux-pro'
     default:
-      return 'dall-e-3'
+      return 'gpt-image-2'
   }
 }

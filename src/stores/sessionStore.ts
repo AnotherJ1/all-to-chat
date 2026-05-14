@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Session, Message } from '../types'
+import { uuid } from '../lib/uuid'
 
 interface SessionState {
   sessions: Session[]
@@ -10,6 +11,7 @@ interface SessionState {
   deleteSession: (id: string) => void
   addMessage: (sessionId: string, message: Message) => void
   updateMessage: (sessionId: string, messageId: string, content: string) => void
+  deleteMessage: (sessionId: string, messageId: string) => void
   updateSessionTitle: (id: string, title: string) => void
   getCurrentSession: () => Session | undefined
 }
@@ -24,7 +26,7 @@ export const useSessionStore = create<SessionState>()(
 
       createSession: () => {
         const newSession: Session = {
-          id: crypto.randomUUID(),
+          id: uuid(),
           title: '新对话',
           messages: [],
           createdAt: Date.now(),
@@ -67,6 +69,15 @@ export const useSessionStore = create<SessionState>()(
                   ),
                   updatedAt: Date.now(),
                 }
+              : s
+          ),
+        })),
+
+      deleteMessage: (sessionId, messageId) =>
+        set((state) => ({
+          sessions: state.sessions.map((s) =>
+            s.id === sessionId
+              ? { ...s, messages: s.messages.filter((m) => m.id !== messageId), updatedAt: Date.now() }
               : s
           ),
         })),

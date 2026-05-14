@@ -1,67 +1,65 @@
 import { useState } from 'react'
 import { useConfigStore } from '../stores/configStore'
+import { IconChevronDown, IconSettings } from './Icons'
+import { toast } from '../stores/toastStore'
 
-interface SystemPromptInputProps {
-  onClose?: () => void
-}
-
-export default function SystemPromptInput({ onClose }: SystemPromptInputProps) {
-  const { protocol } = useConfigStore()
-  const [systemPrompt, setSystemPrompt] = useState('')
+export default function SystemPromptInput() {
+  const { protocol, getCurrentConfig, setSystemPrompt } = useConfigStore()
+  const { systemPrompt } = getCurrentConfig()
   const [isExpanded, setIsExpanded] = useState(false)
+  const [localPrompt, setLocalPrompt] = useState(systemPrompt)
+
+  // 切换协议时同步
+  const currentPrompt = getCurrentConfig().systemPrompt
+  if (localPrompt !== currentPrompt && !isExpanded) {
+    setLocalPrompt(currentPrompt)
+  }
 
   const handleSave = () => {
-    localStorage.setItem(`systemPrompt-${protocol}`, systemPrompt)
-    onClose?.()
+    setSystemPrompt(localPrompt)
+    toast.success('System Prompt 已保存')
   }
 
   const handleClear = () => {
-    localStorage.removeItem(`systemPrompt-${protocol}`)
+    setLocalPrompt('')
     setSystemPrompt('')
+    toast.info('System Prompt 已清除')
   }
 
   return (
-    <div className="glass border-b border-white/10">
+    <div className="border-b border-[var(--border-color)]">
       <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full px-6 py-3 flex items-center justify-between text-sm text-white/50 hover:text-white/80 transition-all cursor-pointer"
+        onClick={() => {
+          setIsExpanded(!isExpanded)
+          if (!isExpanded) setLocalPrompt(getCurrentConfig().systemPrompt)
+        }}
+        className="w-full px-6 py-3 flex items-center justify-between text-sm text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-all cursor-pointer"
       >
         <span className="flex items-center gap-2">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          System Prompt
+          <IconSettings className="w-4 h-4" />
+          <span>System Prompt</span>
+          {currentPrompt && (
+            <span className="px-1.5 py-0.5 rounded text-xs bg-cyan-400/10 text-cyan-400/70">
+              已设置
+            </span>
+          )}
         </span>
-        <svg
-          className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        <IconChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
       </button>
 
       {isExpanded && (
         <div className="px-6 pb-4">
           <textarea
-            value={systemPrompt}
-            onChange={(e) => setSystemPrompt(e.target.value)}
-            placeholder="输入 System Prompt 来控制 AI 的行为..."
+            value={localPrompt}
+            onChange={(e) => setLocalPrompt(e.target.value)}
+            placeholder={`为 ${protocol.toUpperCase()} 设置 System Prompt...`}
             className="input-aurora h-24 resize-none"
           />
           <div className="flex gap-3 mt-3">
-            <button
-              onClick={handleSave}
-              className="btn-aurora btn-aurora-primary text-sm py-2 px-4"
-            >
+            <button onClick={handleSave} className="btn-aurora btn-aurora-primary text-sm py-2 px-4">
               保存
             </button>
-            <button
-              onClick={handleClear}
-              className="btn-aurora text-sm py-2 px-4 hover:bg-white/5"
-            >
+            <button onClick={handleClear} className="btn-aurora text-sm py-2 px-4">
               清除
             </button>
           </div>

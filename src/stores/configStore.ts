@@ -1,12 +1,14 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Protocol } from '../types'
+import { uuid } from '../lib/uuid'
 
 // 单个协议的完整配置
 export interface ProtocolConfig {
   baseUrl: string
   apiKey: string
   model: string
+  systemPrompt: string
 }
 
 // 保存的命名配置
@@ -21,45 +23,42 @@ export interface SavedConfig {
 interface ConfigState {
   protocol: Protocol
   theme: 'light' | 'dark'
-  // 每个协议的当前配置
   configs: Record<Protocol, ProtocolConfig>
-  // 保存的命名配置列表
   savedConfigs: SavedConfig[]
-  // 当前激活的配置ID（null表示使用当前协议的手动配置）
   activeConfigId: string | null
 
-  // 获取当前协议的完整URL
-  getCompleteUrl: (path: string) => string
   setProtocol: (protocol: Protocol) => void
   setBaseUrl: (baseUrl: string) => void
   setApiKey: (apiKey: string) => void
   setModel: (model: string) => void
+  setSystemPrompt: (prompt: string) => void
   setTheme: (theme: 'light' | 'dark') => void
   getCurrentConfig: () => ProtocolConfig
 
-  // 配置管理
   saveConfig: (name: string) => void
   deleteConfig: (id: string) => void
   loadConfig: (id: string) => void
   getConfigsByProtocol: (protocol: Protocol) => SavedConfig[]
 }
 
-// 默认配置
 const DEFAULT_CONFIGS: Record<Protocol, ProtocolConfig> = {
   openai: {
     baseUrl: 'https://api.openai.com',
     apiKey: '',
     model: 'gpt-4o',
+    systemPrompt: '',
   },
   anthropic: {
     baseUrl: 'https://api.anthropic.com',
     apiKey: '',
     model: 'claude-3-5-sonnet-latest',
+    systemPrompt: '',
   },
   gemini: {
     baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
     apiKey: '',
     model: 'gemini-2.0-flash',
+    systemPrompt: '',
   },
 }
 
@@ -71,13 +70,6 @@ export const useConfigStore = create<ConfigState>()(
       configs: { ...DEFAULT_CONFIGS },
       savedConfigs: [],
       activeConfigId: null,
-
-      getCompleteUrl: (path: string) => {
-        const { protocol, configs } = get()
-        const baseUrl = configs[protocol].baseUrl.replace(/\/$/, '')
-        if (path.startsWith('http')) return path
-        return `${baseUrl}${path}`
-      },
 
       setProtocol: (protocol) => set({ protocol, activeConfigId: null }),
 
@@ -105,6 +97,14 @@ export const useConfigStore = create<ConfigState>()(
           },
         })),
 
+      setSystemPrompt: (systemPrompt) =>
+        set((state) => ({
+          configs: {
+            ...state.configs,
+            [state.protocol]: { ...state.configs[state.protocol], systemPrompt },
+          },
+        })),
+
       setTheme: (theme) => set({ theme }),
 
       getCurrentConfig: () => {
@@ -112,11 +112,10 @@ export const useConfigStore = create<ConfigState>()(
         return configs[protocol]
       },
 
-      // 保存当前配置为新命名配置
       saveConfig: (name) => {
         const { protocol, configs } = get()
         const newConfig: SavedConfig = {
-          id: crypto.randomUUID(),
+          id: uuid(),
           name,
           protocol,
           config: { ...configs[protocol] },
@@ -128,14 +127,12 @@ export const useConfigStore = create<ConfigState>()(
         }))
       },
 
-      // 删除命名配置
       deleteConfig: (id) =>
         set((state) => ({
           savedConfigs: state.savedConfigs.filter((c) => c.id !== id),
           activeConfigId: state.activeConfigId === id ? null : state.activeConfigId,
         })),
 
-      // 加载命名配置到当前协议
       loadConfig: (id) => {
         const config = get().savedConfigs.find((c) => c.id === id)
         if (!config) return
@@ -149,13 +146,26 @@ export const useConfigStore = create<ConfigState>()(
         }))
       },
 
-      // 获取指定协议的所有保存配置
       getConfigsByProtocol: (protocol) => {
         return get().savedConfigs.filter((c) => c.protocol === protocol)
       },
     }),
     {
       name: 'config-storage',
+      // 迁移: 旧版本没有 systemPrompt 字段
+      migrate: (persisted: unknown) => {
+        const state = persisted as Record<string, unknown>
+        if (state && typeof state === 'object' && 'configs' in state) {
+          const configs = state.configs as Record<string, Record<string, unknown>>
+          for (const key of Object.keys(configs)) {
+            if (!('systemPrompt' in configs[key])) {
+              configs[key].systemPrompt = ''
+            }
+          }
+        }
+        return state as unknown as ConfigState
+      },
+      version: 1,
     }
   )
 )
