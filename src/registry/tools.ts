@@ -1,6 +1,6 @@
 import { lazy } from 'react'
 import type { ToolMeta } from '../types'
-import { IconChat, IconImage } from '../components/common/Icons'
+import { IconChat, IconImage, IconJson, IconDatabase } from '../components/common/Icons'
 
 /**
  * 工具注册表 — 平台所有可用工具的声明式配置
@@ -22,5 +22,21 @@ export const toolRegistry: ToolMeta[] = [
     icon: IconImage,
     route: '/image',
     component: lazy(() => import('../pages/ImagePage')),
+  },
+  {
+    id: 'json-formatter',
+    name: 'JSON 格式化',
+    description: 'JSON 格式化/压缩，支持超大文件',
+    icon: IconJson,
+    route: '/json',
+    component: lazy(() => import('../pages/JsonFormatterPage')),
+  },
+  {
+    id: 'mybatis-log',
+    name: 'MyBatis 日志转 SQL',
+    description: '自动解析 MyBatis 日志为可执行 SQL',
+    icon: IconDatabase,
+    route: '/mybatis',
+    component: lazy(() => import('../pages/MybatisLogPage')),
   },
 ]
