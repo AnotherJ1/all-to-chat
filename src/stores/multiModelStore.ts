@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Protocol } from '../types'
+import { uuid } from '../lib/uuid'
 
 // 多模型配置
 export interface MultiModelConfig {
@@ -32,7 +33,7 @@ export const useMultiModelStore = create<MultiModelState>()(
         set((state) => ({
           models: [
             ...state.models,
-            { ...config, id: crypto.randomUUID() },
+            { ...config, id: uuid() },
           ],
         })),
 

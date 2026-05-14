@@ -1,15 +1,15 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { useSessionStore } from '../stores/sessionStore'
-import { useConfigStore } from '../stores/configStore'
-import { callApi } from '../api'
-import { toast } from '../stores/toastStore'
+import { useSessionStore } from '../../stores/sessionStore'
+import { useConfigStore } from '../../stores/configStore'
+import { callApi } from '../../api'
+import { toast } from '../../stores/toastStore'
 import ComparisonPanel from './ComparisonPanel'
-import ImageGenerator from './ImageGenerator'
+import ImageGenerator from '../image/ImageGenerator'
 import SessionManager from './SessionManager'
 import MessageInput from './MessageInput'
 import ChatMessage from './ChatMessage'
 import SystemPromptInput from './SystemPromptInput'
-import { IconChat, IconCompare, IconImage, IconFolder } from './Icons'
+import { IconChat, IconCompare, IconImage, IconFolder } from '../common/Icons'
 
 type Tab = 'chat' | 'compare' | 'image' | 'sessions'
 
@@ -57,7 +57,9 @@ export default function ChatView() {
         onChunk: (chunk) => {
           const session = useSessionStore.getState().sessions.find((s) => s.id === currentSession.id)
           const msg = session?.messages.find((m) => m.id === messageId)
-          updateMessage(currentSession.id, messageId, (msg?.content || '') + chunk)
+          if (msg) {
+            updateMessage(currentSession.id, messageId, msg.content + chunk)
+          }
         },
         onError: (error) => {
           toast.error(`重新生成失败: ${error.message}`)
@@ -72,7 +74,9 @@ export default function ChatView() {
 
   const handleDelete = useCallback((messageId: string) => {
     if (!currentSession) return
-    deleteMessage(currentSession.id, messageId)
+    if (window.confirm('确定删除此消息？')) {
+      deleteMessage(currentSession.id, messageId)
+    }
   }, [currentSession, deleteMessage])
 
   const renderContent = () => {
@@ -81,7 +85,7 @@ export default function ChatView() {
         return (
           <div className="flex flex-col h-full">
             <SystemPromptInput />
-            <div className="flex-1 overflow-y-auto scrollbar-aurora px-6 py-4">
+            <div className="flex-1 overflow-y-auto px-6 py-4">
               {currentSession && currentSession.messages.length > 0 ? (
                 <div className="space-y-4 max-w-4xl mx-auto">
                   {currentSession.messages.map((msg) => (
@@ -96,11 +100,19 @@ export default function ChatView() {
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full">
-                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-400/20 to-purple-500/20 border border-cyan-400/20 flex items-center justify-center mb-4">
-                    <IconChat className="w-10 h-10 text-cyan-400/60" />
+                  <div
+                    className="w-20 h-20 flex items-center justify-center mb-4"
+                    style={{
+                      borderRadius: 'var(--radius)',
+                      border: 'var(--border-width) solid var(--border-color)',
+                      background: 'color-mix(in srgb, var(--accent-1) 10%, transparent)',
+                      boxShadow: 'var(--shadow-md)',
+                    }}
+                  >
+                    <IconChat className="w-10 h-10" style={{ color: 'var(--accent-1)', opacity: 0.7 }} />
                   </div>
-                  <p className="text-[var(--text-muted)] text-lg mb-2">开始与 AI 对话</p>
-                  <p className="text-[var(--text-muted)] text-sm opacity-60">发送消息开启智能对话体验</p>
+                  <p className="text-lg mb-2 font-bold" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-heading)' }}>开始与 AI 对话</p>
+                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>发送消息开启智能对话体验</p>
                 </div>
               )}
             </div>
@@ -125,12 +137,25 @@ export default function ChatView() {
   return (
     <div className="flex flex-col h-full">
       {/* Tab 导航 */}
-      <div className="flex items-center gap-1 px-6 py-2 border-b border-[var(--border-color)]">
+      <div
+        className="flex items-center gap-1 px-6 py-2 theme-topbar"
+      >
         {TABS.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`tab-aurora flex items-center gap-2 ${activeTab === tab.key ? 'active' : ''}`}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold cursor-pointer"
+            style={{
+              fontFamily: 'var(--font-body)',
+              color: activeTab === tab.key ? 'var(--accent-1)' : 'var(--text-muted)',
+              borderBottom: activeTab === tab.key ? '2px solid var(--accent-1)' : '2px solid transparent',
+              transition: 'var(--transition)',
+              background: 'transparent',
+              border: 'none',
+              borderBottomWidth: '2px',
+              borderBottomStyle: 'solid',
+              borderBottomColor: activeTab === tab.key ? 'var(--accent-1)' : 'transparent',
+            }}
           >
             <tab.Icon className="w-4 h-4" />
             <span className="hidden sm:inline">{tab.label}</span>

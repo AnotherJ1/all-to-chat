@@ -22,7 +22,6 @@ export interface SavedConfig {
 
 interface ConfigState {
   protocol: Protocol
-  theme: 'light' | 'dark'
   configs: Record<Protocol, ProtocolConfig>
   savedConfigs: SavedConfig[]
   activeConfigId: string | null
@@ -32,7 +31,6 @@ interface ConfigState {
   setApiKey: (apiKey: string) => void
   setModel: (model: string) => void
   setSystemPrompt: (prompt: string) => void
-  setTheme: (theme: 'light' | 'dark') => void
   getCurrentConfig: () => ProtocolConfig
 
   saveConfig: (name: string) => void
@@ -66,7 +64,6 @@ export const useConfigStore = create<ConfigState>()(
   persist(
     (set, get) => ({
       protocol: 'openai',
-      theme: 'dark',
       configs: { ...DEFAULT_CONFIGS },
       savedConfigs: [],
       activeConfigId: null,
@@ -104,8 +101,6 @@ export const useConfigStore = create<ConfigState>()(
             [state.protocol]: { ...state.configs[state.protocol], systemPrompt },
           },
         })),
-
-      setTheme: (theme) => set({ theme }),
 
       getCurrentConfig: () => {
         const { protocol, configs } = get()

@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { uuid } from '../lib/uuid'
 
 // 图片历史记录项
 export interface ImageRecord {
@@ -28,7 +29,7 @@ export const useImageHistoryStore = create<ImageHistoryState>()(
           records: [
             {
               ...record,
-              id: crypto.randomUUID(),
+              id: uuid(),
               createdAt: Date.now(),
             },
             ...state.records,

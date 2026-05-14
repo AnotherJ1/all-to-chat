@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
-import { useSessionStore } from '../stores/sessionStore'
-import { useConfigStore } from '../stores/configStore'
-import { callApi } from '../api'
-import { toast } from '../stores/toastStore'
-import { uuid } from '../lib/uuid'
-import { IconSend, IconStop } from './Icons'
-import type { Message } from '../types'
+import { useSessionStore } from '../../stores/sessionStore'
+import { useConfigStore } from '../../stores/configStore'
+import { callApi } from '../../api'
+import { toast } from '../../stores/toastStore'
+import { uuid } from '../../lib/uuid'
+import { IconSend, IconStop } from '../common/Icons'
+import type { Message } from '../../types'
 
 export default function MessageInput() {
   const [input, setInput] = useState('')
@@ -115,7 +115,15 @@ export default function MessageInput() {
 
   return (
     <div className="relative">
-      <div className="glass-card p-2" style={{ transform: 'none' }}>
+      <div
+        className="p-2"
+        style={{
+          background: 'var(--bg-surface)',
+          border: 'var(--border-width) solid var(--border-color)',
+          borderRadius: 'var(--radius)',
+          boxShadow: 'var(--shadow-md)',
+        }}
+      >
         <div className="flex items-end gap-3">
           <textarea
             ref={textareaRef}
@@ -124,25 +132,32 @@ export default function MessageInput() {
             onKeyDown={handleKeyDown}
             placeholder="输入消息... (Enter 发送, Shift+Enter 换行)"
             disabled={isStreaming}
-            className="flex-1 bg-transparent border-none outline-none text-[var(--text-primary)] placeholder-[var(--text-muted)] resize-none px-4 py-3 min-h-[48px] max-h-[150px]"
+            className="flex-1 bg-transparent border-none outline-none resize-none px-4 py-3 min-h-[48px] max-h-[150px]"
+            style={{
+              color: 'var(--text-primary)',
+              fontFamily: 'var(--font-body)',
+              fontSize: '14px',
+            }}
             rows={1}
           />
           {isStreaming ? (
             <button
               onClick={handleStop}
-              className="w-12 h-12 rounded-xl bg-red-500/20 border border-red-400/30 flex items-center justify-center hover:bg-red-500/30 transition-all cursor-pointer"
+              className="theme-btn"
+              style={{ padding: 0, width: '44px', height: '44px', background: 'rgba(239, 68, 68, 0.15)', borderColor: 'rgba(239, 68, 68, 0.4)' }}
               title="停止生成"
             >
-              <IconStop className="w-5 h-5 text-red-400" />
+              <IconStop className="w-5 h-5" style={{ color: '#ef4444' }} />
             </button>
           ) : (
             <button
               onClick={handleSend}
               disabled={!input.trim()}
-              className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-400/30 to-purple-500/30 border border-cyan-400/30 flex items-center justify-center hover:from-cyan-400/40 hover:to-purple-500/40 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              className="theme-btn theme-btn-primary"
+              style={{ padding: 0, width: '44px', height: '44px', opacity: input.trim() ? 1 : 0.4 }}
               title="发送"
             >
-              <IconSend className="w-5 h-5 text-cyan-400" />
+              <IconSend className="w-5 h-5" />
             </button>
           )}
         </div>

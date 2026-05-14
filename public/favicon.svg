@@ -1,0 +1,13 @@
+<svg width="32" height="32" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 圆角方形底座 -->
+  <rect x="4" y="12" width="56" height="44" rx="10" fill="#1a1a2e" stroke="#fbbf24" stroke-width="3"/>
+  <!-- 提手 -->
+  <path d="M22 12V8a10 10 0 0 1 20 0v4" stroke="#fbbf24" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <!-- 中间分割线 -->
+  <line x1="4" y1="28" x2="60" y2="28" stroke="#fbbf24" stroke-width="2" opacity="0.5"/>
+  <!-- 闪电 -->
+  <path d="M36 22L28 34h8l-4 12 12-14h-8l4-10z" fill="#fbbf24" stroke="#1a1a2e" stroke-width="1.5" stroke-linejoin="round"/>
+  <!-- 装饰圆点 -->
+  <circle cx="16" cy="42" r="4" fill="#f87171" opacity="0.8"/>
+  <circle cx="48" cy="42" r="4" fill="#34d399" opacity="0.8"/>
+</svg>

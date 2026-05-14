@@ -96,6 +96,11 @@ export const useSessionStore = create<SessionState>()(
     }),
     {
       name: 'session-storage',
+      // 限制持久化的会话数量，避免 localStorage 溢出
+      partialize: (state) => ({
+        sessions: state.sessions.slice(0, 50),
+        currentSessionId: state.currentSessionId,
+      }),
     }
   )
 )

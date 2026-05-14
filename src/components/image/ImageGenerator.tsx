@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { useConfigStore } from '../stores/configStore'
-import { useImageHistoryStore } from '../stores/imageHistoryStore'
-import { generateImage, getDefaultModel } from '../api/imagegen'
-import { fetchModelList } from '../api/openai'
-import { toast } from '../stores/toastStore'
-import { IconDownload, IconTrash } from './Icons'
+import { useConfigStore } from '../../stores/configStore'
+import { useImageHistoryStore } from '../../stores/imageHistoryStore'
+import { generateImage, getDefaultModel } from '../../api/imagegen'
+import { fetchModelList } from '../../api/openai'
+import { toast } from '../../stores/toastStore'
+import { IconDownload, IconTrash } from '../common/Icons'
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
 
@@ -73,8 +73,12 @@ export default function ImageGenerator() {
     setIsGenerating(true)
     setCurrentImage(null)
 
+    // 60 秒超时
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 60000)
+
     try {
-      const result = await generateImage(activeBaseUrl, activeApiKey, model, prompt, provider)
+      const result = await generateImage(activeBaseUrl, activeApiKey, model, prompt, provider, controller.signal)
       if (result.success && result.imageUrl) {
         setCurrentImage(result.imageUrl)
         addRecord({ prompt, imageUrl: result.imageUrl, provider, model })
@@ -83,8 +87,13 @@ export default function ImageGenerator() {
         toast.error(result.error || '生成失败')
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : '生成失败')
+      if (err instanceof Error && err.name === 'AbortError') {
+        toast.error('图片生成超时（60秒），请重试')
+      } else {
+        toast.error(err instanceof Error ? err.message : '生成失败')
+      }
     } finally {
+      clearTimeout(timeout)
       setIsGenerating(false)
     }
   }
@@ -103,28 +112,27 @@ export default function ImageGenerator() {
   return (
     <div className="flex h-full">
       {/* 左侧: 生成面板 */}
-      <div className="w-96 border-r border-[var(--border-color)] p-6 flex flex-col overflow-y-auto scrollbar-aurora">
-        <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">图片生成</h2>
+      <div className="w-96 p-6 flex flex-col overflow-y-auto theme-sidebar">
+        <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-heading)' }}>图片生成</h2>
 
         {/* API 配置选择 */}
-        <div className="mb-4 p-3 rounded-xl border border-[var(--border-color)]">
+        <div className="mb-4 p-3" style={{ border: 'var(--border-width) solid var(--border-color)', borderRadius: 'var(--radius-sm)' }}>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-medium text-[var(--text-primary)]">API 配置</label>
+            <label className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>API 配置</label>
             <button
               onClick={() => {
                 setUseGlobalConfig(true)
                 setCustomBaseUrl(globalConfig.baseUrl)
                 setCustomApiKey(globalConfig.apiKey)
               }}
-              className={`text-xs px-2 py-1 rounded-lg transition-colors cursor-pointer ${
-                useGlobalConfig ? 'bg-cyan-400/10 text-cyan-400' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-              }`}
+              className="theme-btn"
+              style={{ padding: '2px 8px', fontSize: '11px', background: useGlobalConfig ? 'color-mix(in srgb, var(--accent-1) 15%, transparent)' : 'transparent', color: useGlobalConfig ? 'var(--accent-1)' : 'var(--text-muted)' }}
             >
               使用全局配置
             </button>
           </div>
           {useGlobalConfig ? (
-            <div className="text-xs text-[var(--text-muted)]">
+            <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
               当前使用全局配置: {globalConfig.baseUrl}
             </div>
           ) : (
@@ -134,14 +142,16 @@ export default function ImageGenerator() {
                 value={customBaseUrl}
                 onChange={(e) => setCustomBaseUrl(e.target.value)}
                 placeholder="Base URL"
-                className="input-aurora text-sm py-2"
+                className="theme-input text-sm"
+                style={{ padding: '8px 12px' }}
               />
               <input
                 type="password"
                 value={customApiKey}
                 onChange={(e) => setCustomApiKey(e.target.value)}
                 placeholder="API Key"
-                className="input-aurora text-sm py-2"
+                className="theme-input text-sm"
+                style={{ padding: '8px 12px' }}
               />
             </div>
           )}
@@ -151,7 +161,8 @@ export default function ImageGenerator() {
                 <button
                   key={sc.id}
                   onClick={() => handleLoadSavedConfig(sc.id)}
-                  className="text-xs px-2 py-1 rounded-lg border border-[var(--border-color)] text-[var(--text-secondary)] hover:border-cyan-400/30 hover:text-cyan-400 transition-colors cursor-pointer"
+                  className="theme-btn"
+                  style={{ padding: '2px 8px', fontSize: '11px' }}
                 >
                   {sc.name}
                 </button>
@@ -162,32 +173,29 @@ export default function ImageGenerator() {
 
         {/* 提供商选择 */}
         <div className="mb-4">
-          <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">提供商</label>
+          <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>提供商</label>
           <div className="flex gap-2">
             {(['dalle', 'imagen', 'flux'] as const).map((p) => (
               <button
                 key={p}
                 onClick={() => handleProviderChange(p)}
-                className={`px-3 py-1.5 rounded-lg text-sm transition-colors cursor-pointer ${
-                  provider === p
-                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-400/30'
-                    : 'border border-[var(--border-color)] text-[var(--text-secondary)] hover:border-[var(--border-hover)]'
-                }`}
+                className={provider === p ? 'theme-btn theme-btn-primary' : 'theme-btn'}
+                style={{ padding: '6px 12px', fontSize: '13px' }}
               >
                 {p === 'dalle' ? 'DALL-E' : p === 'imagen' ? 'Imagen' : 'Flux'}
               </button>
             ))}
           </div>
-          <p className="text-xs text-[var(--text-muted)] mt-2 leading-relaxed">
-            {provider === 'dalle' && '适用于 OpenAI 兼容 API（含代理服务）。请点击「获取模型」选择你代理中实际可用的图片模型,如 gpt-image-2。'}
-            {provider === 'imagen' && '适用于 Google AI 原生 API。需要 Google API Key,代理服务通常不支持此选项。'}
+          <p className="text-xs mt-2 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+            {provider === 'dalle' && '适用于 OpenAI 兼容 API（含代理服务）。请点击「获取模型」选择你代理中实际可用的图片模型。'}
+            {provider === 'imagen' && '适用于 Google AI 原生 API。需要 Google API Key。'}
             {provider === 'flux' && '适用于 OpenAI 兼容端点（Replicate/代理）。请点击「获取模型」选择可用的 Flux 模型。'}
           </p>
         </div>
 
         {/* 模型输入 */}
         <div className="mb-4">
-          <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">模型</label>
+          <label className="block text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>模型</label>
           <div className="flex items-center gap-2">
             <div className="flex-1 relative">
               <input
@@ -196,17 +204,19 @@ export default function ImageGenerator() {
                 onChange={(e) => setModel(e.target.value)}
                 onFocus={() => imageModels.length > 0 && setShowImageModelList(true)}
                 placeholder={`如 ${getDefaultModel(provider)}`}
-                className="input-aurora"
+                className="theme-input"
               />
               {showImageModelList && imageModels.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 z-50 max-h-40 overflow-y-auto rounded-xl border border-[var(--border-color)] shadow-lg scrollbar-aurora" style={{ background: 'var(--bg-primary)' }}>
+                <div
+                  className="absolute top-full left-0 right-0 mt-1 z-50 max-h-40 overflow-y-auto"
+                  style={{ background: 'var(--bg-surface)', border: 'var(--border-width) solid var(--border-color)', borderRadius: 'var(--radius-sm)', boxShadow: 'var(--shadow-lg)' }}
+                >
                   {imageModels.map((m) => (
                     <button
                       key={m}
                       onClick={() => { setModel(m); setShowImageModelList(false) }}
-                      className={`w-full text-left px-4 py-2 text-sm transition-colors cursor-pointer hover:bg-[var(--glass-bg-hover)] ${
-                        model === m ? 'text-cyan-400 bg-cyan-400/5' : 'text-[var(--text-primary)]'
-                      }`}
+                      className="w-full text-left px-4 py-2 text-sm cursor-pointer"
+                      style={{ color: model === m ? 'var(--accent-1)' : 'var(--text-primary)', background: model === m ? 'color-mix(in srgb, var(--accent-1) 10%, transparent)' : 'transparent', transition: 'var(--transition)' }}
                     >
                       {m}
                     </button>
@@ -217,7 +227,8 @@ export default function ImageGenerator() {
             <button
               onClick={handleFetchModels}
               disabled={loadingImageModels || !activeApiKey}
-              className="btn-aurora text-xs py-2.5 px-3 whitespace-nowrap disabled:opacity-50"
+              className="theme-btn"
+              style={{ whiteSpace: 'nowrap', fontSize: '12px', opacity: (loadingImageModels || !activeApiKey) ? 0.5 : 1 }}
             >
               {loadingImageModels ? '加载中...' : '获取模型'}
             </button>
@@ -226,12 +237,12 @@ export default function ImageGenerator() {
 
         {/* Prompt 输入 */}
         <div className="mb-4" onClick={() => setShowImageModelList(false)}>
-          <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">描述</label>
+          <label className="block text-sm font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>描述</label>
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="描述你想要生成的图片..."
-            className="input-aurora h-32 resize-none"
+            className="theme-input h-32 resize-none"
           />
         </div>
 
@@ -239,7 +250,8 @@ export default function ImageGenerator() {
         <button
           onClick={handleGenerate}
           disabled={isGenerating || !prompt.trim()}
-          className="btn-aurora btn-aurora-primary w-full"
+          className="theme-btn theme-btn-primary w-full"
+          style={{ opacity: (isGenerating || !prompt.trim()) ? 0.5 : 1 }}
         >
           {isGenerating ? '生成中...' : '生成图片'}
         </button>
@@ -250,11 +262,13 @@ export default function ImageGenerator() {
             <img
               src={currentImage}
               alt="Generated"
-              className="w-full rounded-xl border border-[var(--border-color)]"
+              className="w-full"
+              style={{ borderRadius: 'var(--radius-sm)', border: 'var(--border-width) solid var(--border-color)' }}
             />
             <button
               onClick={() => handleDownload(currentImage)}
-              className="absolute bottom-2 right-2 px-3 py-1.5 bg-black/60 hover:bg-black/80 rounded-lg text-sm transition-colors cursor-pointer flex items-center gap-1"
+              className="absolute bottom-2 right-2 theme-btn"
+              style={{ padding: '4px 10px', fontSize: '12px', background: 'rgba(0,0,0,0.7)', color: '#fff' }}
             >
               <IconDownload className="w-3.5 h-3.5" />
               下载
@@ -264,13 +278,14 @@ export default function ImageGenerator() {
       </div>
 
       {/* 右侧: 历史记录 */}
-      <div className="flex-1 p-6 overflow-y-auto scrollbar-aurora">
+      <div className="flex-1 p-6 overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-[var(--text-primary)]">生成历史</h3>
+          <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-heading)' }}>生成历史</h3>
           {records.length > 0 && (
             <button
               onClick={clearHistory}
-              className="text-sm text-red-400/70 hover:text-red-400 transition-colors cursor-pointer"
+              className="text-sm cursor-pointer"
+              style={{ color: '#f87171', transition: 'var(--transition)' }}
             >
               清空
             </button>
@@ -278,13 +293,17 @@ export default function ImageGenerator() {
         </div>
 
         {records.length === 0 ? (
-          <div className="flex items-center justify-center h-64 text-[var(--text-muted)]">
+          <div className="flex items-center justify-center h-64" style={{ color: 'var(--text-muted)' }}>
             暂无生成记录
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {records.map((record) => (
-              <div key={record.id} className="rounded-xl border border-[var(--border-color)] overflow-hidden group" style={{ transform: 'none' }}>
+              <div
+                key={record.id}
+                className="theme-card overflow-hidden group"
+                style={{ padding: 0 }}
+              >
                 <div
                   className="aspect-square cursor-pointer overflow-hidden"
                   onClick={() => handleDownload(record.imageUrl)}
@@ -292,23 +311,28 @@ export default function ImageGenerator() {
                   <img
                     src={record.imageUrl}
                     alt={record.prompt}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover"
+                    style={{ transition: 'transform 0.3s' }}
                   />
                 </div>
                 <div className="p-3">
-                  <p className="text-sm text-[var(--text-primary)] line-clamp-2">{record.prompt}</p>
+                  <p className="text-sm line-clamp-2" style={{ color: 'var(--text-primary)' }}>{record.prompt}</p>
                   <div className="mt-2 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs px-1.5 py-0.5 bg-cyan-500/10 text-cyan-400/70 rounded">
+                      <span
+                        className="text-xs px-1.5 py-0.5"
+                        style={{ background: 'color-mix(in srgb, var(--accent-1) 15%, transparent)', color: 'var(--accent-1)', borderRadius: 'var(--radius-sm)' }}
+                      >
                         {record.provider.toUpperCase()}
                       </span>
-                      <span className="text-xs text-[var(--text-muted)]">
+                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
                         {format(record.createdAt, 'MM/dd HH:mm', { locale: zhCN })}
                       </span>
                     </div>
                     <button
                       onClick={() => deleteRecord(record.id)}
-                      className="text-[var(--text-muted)] hover:text-red-400 transition-colors cursor-pointer"
+                      className="cursor-pointer"
+                      style={{ color: 'var(--text-muted)', transition: 'var(--transition)' }}
                       title="删除"
                     >
                       <IconTrash className="w-3.5 h-3.5" />

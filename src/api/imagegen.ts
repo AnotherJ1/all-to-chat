@@ -34,7 +34,8 @@ async function generateWithDalle(
   baseUrl: string,
   apiKey: string,
   model: string,
-  prompt: string
+  prompt: string,
+  signal?: AbortSignal
 ): Promise<ImageGenerationResult> {
   try {
     const base = baseUrl.replace(/\/$/, '')
@@ -51,6 +52,7 @@ async function generateWithDalle(
         size: '1024x1024',
         response_format: 'b64_json',
       }),
+      signal,
     })
 
     if (!response.ok) {
@@ -72,7 +74,8 @@ async function generateWithDalle(
 async function generateWithImagen(
   baseUrl: string,
   apiKey: string,
-  prompt: string
+  prompt: string,
+  signal?: AbortSignal
 ): Promise<ImageGenerationResult> {
   try {
     const endpoint = baseUrl.includes('vertexai')
@@ -88,6 +91,7 @@ async function generateWithImagen(
         aspectRatio: '1:1',
         personGeneration: 'dont_allow',
       }),
+      signal,
     })
 
     if (!response.ok) {
@@ -111,7 +115,8 @@ async function generateWithFlux(
   baseUrl: string,
   apiKey: string,
   model: string,
-  prompt: string
+  prompt: string,
+  signal?: AbortSignal
 ): Promise<ImageGenerationResult> {
   try {
     const base = baseUrl.replace(/\/$/, '')
@@ -128,6 +133,7 @@ async function generateWithFlux(
         size: '1024x1024',
         response_format: 'b64_json',
       }),
+      signal,
     })
 
     if (!response.ok) {
@@ -151,15 +157,16 @@ export async function generateImage(
   apiKey: string,
   model: string,
   prompt: string,
-  provider: 'dalle' | 'imagen' | 'flux'
+  provider: 'dalle' | 'imagen' | 'flux',
+  signal?: AbortSignal
 ): Promise<ImageGenerationResult> {
   switch (provider) {
     case 'dalle':
-      return generateWithDalle(baseUrl, apiKey, model, prompt)
+      return generateWithDalle(baseUrl, apiKey, model, prompt, signal)
     case 'imagen':
-      return generateWithImagen(baseUrl, apiKey, prompt)
+      return generateWithImagen(baseUrl, apiKey, prompt, signal)
     case 'flux':
-      return generateWithFlux(baseUrl, apiKey, model, prompt)
+      return generateWithFlux(baseUrl, apiKey, model, prompt, signal)
     default:
       return { success: false, error: `不支持的提供商: ${provider}` }
   }

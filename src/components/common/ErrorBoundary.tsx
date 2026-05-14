@@ -39,7 +39,7 @@ export default class ErrorBoundary extends Component<Props, State> {
           </p>
           <button
             onClick={this.handleReset}
-            className="btn-aurora btn-aurora-primary"
+            className="theme-btn theme-btn-primary"
           >
             重新加载
           </button>

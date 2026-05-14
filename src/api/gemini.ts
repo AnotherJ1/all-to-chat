@@ -1,5 +1,6 @@
 // Gemini API 调用（支持流式输出 streamGenerateContent）
 import type { Message } from '../types'
+import { parseSSEStream } from '../lib/sse'
 
 interface GenerateContentOptions {
   url: string
@@ -69,37 +70,20 @@ export async function generateContent({
       return content
     }
 
-    // Gemini streamGenerateContent 返回 SSE,每条 data 是一个完整 JSON
+    // Gemini streamGenerateContent 返回 SSE,复用通用 SSE 解析器
     if (!response.body) throw new Error('无法读取响应流')
 
-    const reader = response.body.getReader()
-    const decoder = new TextDecoder()
     let fullContent = ''
-    let buffer = ''
-
-    while (true) {
-      if (signal?.aborted) break
-      const { done, value } = await reader.read()
-      if (done) break
-
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split('\n')
-      buffer = lines.pop() || ''
-
-      for (const line of lines) {
-        if (!line.startsWith('data:')) continue
-        const jsonStr = line.slice(5).trim()
-        if (!jsonStr) continue
-        try {
-          const parsed = JSON.parse(jsonStr)
-          const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text
-          if (text) {
-            fullContent += text
-            onChunk?.(text)
-          }
-        } catch {
-          // 忽略
+    for await (const event of parseSSEStream(response.body, signal)) {
+      try {
+        const parsed = JSON.parse(event.data)
+        const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text
+        if (text) {
+          fullContent += text
+          onChunk?.(text)
         }
+      } catch {
+        // 忽略解析错误
       }
     }
 
