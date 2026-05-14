@@ -37,7 +37,7 @@ export default function App() {
               <Route
                 key={tool.id}
                 path={tool.route}
-                element={<tool.component />}
+                element={tool.disabled ? <Navigate to="/" replace /> : <tool.component />}
               />
             ))}
             {/* 未定义路由重定向到首页 */}

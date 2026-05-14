@@ -3,6 +3,7 @@ import { toolRegistry } from '../registry/tools'
 import ToolCard from '../components/common/ToolCard'
 import Logo from '../components/common/Logo'
 import { useThemeStore } from '../stores/themeStore'
+import { toast } from '../stores/toastStore'
 
 /**
  * 首页 — 工具卡片网格
@@ -10,6 +11,14 @@ import { useThemeStore } from '../stores/themeStore'
 export default function HomePage() {
   const navigate = useNavigate()
   const style = useThemeStore((s) => s.style)
+
+  const handleToolClick = (tool: typeof toolRegistry[number]) => {
+    if (tool.disabled) {
+      toast.info('该功能暂未开放，敬请期待')
+      return
+    }
+    navigate(tool.route)
+  }
 
   return (
     <div
@@ -58,7 +67,7 @@ export default function HomePage() {
           <ToolCard
             key={tool.id}
             tool={tool}
-            onClick={() => navigate(tool.route)}
+            onClick={() => handleToolClick(tool)}
             index={index}
           />
         ))}

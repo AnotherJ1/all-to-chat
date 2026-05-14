@@ -182,12 +182,12 @@ export default function ImageGenerator() {
                 className={provider === p ? 'theme-btn theme-btn-primary' : 'theme-btn'}
                 style={{ padding: '6px 12px', fontSize: '13px' }}
               >
-                {p === 'dalle' ? 'DALL-E' : p === 'imagen' ? 'Imagen' : 'Flux'}
+                {p === 'dalle' ? 'OpenAI' : p === 'imagen' ? 'Imagen' : 'Flux'}
               </button>
             ))}
           </div>
           <p className="text-xs mt-2 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-            {provider === 'dalle' && '适用于 OpenAI 兼容 API（含代理服务）。请点击「获取模型」选择你代理中实际可用的图片模型。'}
+            {provider === 'dalle' && '适用于 OpenAI 兼容 API（含 CLIProxyAPI 等代理服务）。请点击「获取模型」选择可用的图片模型。'}
             {provider === 'imagen' && '适用于 Google AI 原生 API。需要 Google API Key。'}
             {provider === 'flux' && '适用于 OpenAI 兼容端点（Replicate/代理）。请点击「获取模型」选择可用的 Flux 模型。'}
           </p>

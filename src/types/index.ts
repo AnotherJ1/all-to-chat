@@ -14,6 +14,8 @@ export interface ToolMeta {
   route: string
   /** 懒加载的页面组件 */
   component: LazyExoticComponent<ComponentType>
+  /** 是否禁用（禁用时点击提示暂未开放） */
+  disabled?: boolean
 }
 
 // 协议类型

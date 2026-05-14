@@ -22,6 +22,7 @@ export const toolRegistry: ToolMeta[] = [
     icon: IconImage,
     route: '/image',
     component: lazy(() => import('../pages/ImagePage')),
+    disabled: true,
   },
   {
     id: 'json-formatter',

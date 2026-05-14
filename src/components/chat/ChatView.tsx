@@ -13,10 +13,10 @@ import { IconChat, IconCompare, IconImage, IconFolder } from '../common/Icons'
 
 type Tab = 'chat' | 'compare' | 'image' | 'sessions'
 
-const TABS: { key: Tab; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
+const TABS: { key: Tab; label: string; Icon: React.ComponentType<{ className?: string }>; disabled?: boolean }[] = [
   { key: 'chat', label: '对话', Icon: IconChat },
   { key: 'compare', label: '多模型对比', Icon: IconCompare },
-  { key: 'image', label: '图片生成', Icon: IconImage },
+  { key: 'image', label: '图片生成', Icon: IconImage, disabled: true },
   { key: 'sessions', label: '会话管理', Icon: IconFolder },
 ]
 
@@ -143,7 +143,13 @@ export default function ChatView() {
         {TABS.map((tab) => (
           <button
             key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
+            onClick={() => {
+              if (tab.disabled) {
+                toast.info('该功能暂未开放，敬请期待')
+                return
+              }
+              setActiveTab(tab.key)
+            }}
             className="flex items-center gap-2 px-4 py-2 text-sm font-semibold cursor-pointer"
             style={{
               fontFamily: 'var(--font-body)',
@@ -155,6 +161,7 @@ export default function ChatView() {
               borderBottomWidth: '2px',
               borderBottomStyle: 'solid',
               borderBottomColor: activeTab === tab.key ? 'var(--accent-1)' : 'transparent',
+              opacity: tab.disabled ? 0.5 : 1,
             }}
           >
             <tab.Icon className="w-4 h-4" />
