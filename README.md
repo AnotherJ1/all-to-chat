@@ -104,7 +104,7 @@ npm run build
    | Build command | `npm run build` |
    | Build output directory | `dist` |
    | Root directory | `/`（如果是 monorepo 则填子目录路径） |
-   | Node.js version | 18（在 Environment variables 中设置 `NODE_VERSION=18`） |
+   | Node.js version | 22（在 Environment variables 中设置 `NODE_VERSION=22`） |
 
 5. **点击 Save and Deploy**
    - 首次部署约 1-2 分钟
@@ -156,7 +156,7 @@ wrangler pages deploy dist --project-name=tool-hub
 
 | 变量名 | 说明 | 示例 |
 |--------|------|------|
-| `NODE_VERSION` | Node.js 版本 | `18` |
+| `NODE_VERSION` | Node.js 版本 | `22` |
 
 > 注意：本项目为纯前端应用，API Key 等敏感信息存储在用户浏览器 localStorage 中，不需要在服务端配置。
 
