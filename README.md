@@ -1,6 +1,6 @@
 # Tool Hub
 
-> 开发者工具集合平台 — AI 聊天、图片生成、JSON 格式化、MyBatis 日志转 SQL
+> 开发者工具集合平台 — AI 聊天、图片生成、JSON 格式化、MyBatis 日志转 SQL、Base64 图片互转
 
 ## 功能概览
 
@@ -10,6 +10,7 @@
 | 图片生成 | `/image` | 文生图，支持 DALL-E / Imagen / Flux |
 | JSON 格式化 | `/json` | JSON 格式化/压缩，Web Worker 处理超大文件 |
 | MyBatis 日志转 SQL | `/mybatis` | 自动解析 MyBatis 日志为可执行 SQL |
+| Base64 图片互转 | `/base64-image` | 图片 ↔ Base64 双向转换，自动识别 MIME，含多语言代码示例 |
 
 ## 技术栈
 
@@ -50,12 +51,31 @@ src/
 │   ├── ChatPage.tsx       # AI 聊天页面
 │   ├── ImagePage.tsx      # 图片生成页面
 │   ├── JsonFormatterPage.tsx   # JSON 格式化页面
-│   └── MybatisLogPage.tsx     # MyBatis 日志转 SQL 页面
+│   ├── MybatisLogPage.tsx     # MyBatis 日志转 SQL 页面
+│   └── Base64ImagePage.tsx    # Base64 图片互转页面
 ├── registry/              # 工具注册表（声明式配置）
 ├── stores/                # Zustand 状态管理
 ├── types/                 # TypeScript 类型定义
-└── workers/               # Web Worker（JSON 格式化）
+└── workers/               # Web Worker（JSON 格式化、Base64 编解码）
 ```
+
+## Base64 图片互转
+
+针对图片与 Base64 双向转换的常见需求做了体验和性能上的打磨：
+
+- **双向模式**：图片 → Base64、Base64 → 图片，可在两个 tab 间切换且保留输入内容
+- **多种输入方式**：点击选择 / 拖拽上传 / `Ctrl/⌘ + V` 直接粘贴剪贴板图片
+- **MIME 自动识别**：通过 base64 头部魔数嗅探 PNG / JPEG / GIF / WebP / BMP / SVG，无需手动指定
+- **输出格式可切换**：完整 Data URL（`data:image/png;base64,...`）或纯 Base64
+- **多语言代码示例**：HTML/CSS、JS 编码、JS 解码、React、Node.js、Python、Java，自动注入当前数据（已截断），一键复制
+- **大文件性能优化**：
+  - 单文件上限 10 MB；≥ 1 MB 走 Web Worker 编解码（ArrayBuffer Transferable 零拷贝），主线程不阻塞
+  - 上传瞬间用 `URL.createObjectURL` 立即预览，不等编码完成
+  - 输出 textarea 超过 200 KB 自动截断显示（首 70% + 尾 10%），可手动展开完整
+  - 解码 tab 的输入框采用非受控 + 节流统计，粘贴几十 MB 也不卡
+  - 代码示例区使用 `useMemo` + `useDeferredValue` + `React.memo`，输入响应优先于示例更新
+- **内存管理**：所有 ObjectURL 在切换文件 / 卸载页面时自动 `revokeObjectURL`，无泄漏
+- **A11y**：标签 / 按钮带 `role` 与 `aria-*` 标注，键盘可触发上传区
 
 ## 主题系统
 

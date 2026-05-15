@@ -207,3 +207,12 @@ export function IconDatabase({ className = 'w-5 h-5', style }: IconProps) {
     </svg>
   )
 }
+
+export function IconBase64({ className = 'w-5 h-5', style }: IconProps) {
+  return (
+    <svg className={className} style={style} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5v10.5H3.75z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8 10l-2 2 2 2M16 10l2 2-2 2M13 9l-2 6" />
+    </svg>
+  )
+}

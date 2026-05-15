@@ -1,6 +1,6 @@
 import { lazy } from 'react'
 import type { ToolMeta } from '../types'
-import { IconChat, IconImage, IconJson, IconDatabase } from '../components/common/Icons'
+import { IconChat, IconImage, IconJson, IconDatabase, IconBase64 } from '../components/common/Icons'
 
 /**
  * 工具注册表 — 平台所有可用工具的声明式配置
@@ -39,5 +39,13 @@ export const toolRegistry: ToolMeta[] = [
     icon: IconDatabase,
     route: '/mybatis',
     component: lazy(() => import('../pages/MybatisLogPage')),
+  },
+  {
+    id: 'base64-image',
+    name: 'Base64 图片互转',
+    description: '图片 ↔ Base64 双向转换，含多语言示例',
+    icon: IconBase64,
+    route: '/base64-image',
+    component: lazy(() => import('../pages/Base64ImagePage')),
   },
 ]
