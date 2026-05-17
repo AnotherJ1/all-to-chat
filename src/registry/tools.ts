@@ -1,6 +1,6 @@
 import { lazy } from 'react'
 import type { ToolMeta } from '../types'
-import { IconChat, IconImage, IconJson, IconDatabase, IconBase64 } from '../components/common/Icons'
+import { IconChat, IconImage, IconJson, IconDatabase, IconBase64, IconClock, IconLink, IconCron, IconDiff } from '../components/common/Icons'
 
 /**
  * 工具注册表 — 平台所有可用工具的声明式配置
@@ -47,5 +47,37 @@ export const toolRegistry: ToolMeta[] = [
     icon: IconBase64,
     route: '/base64-image',
     component: lazy(() => import('../pages/Base64ImagePage')),
+  },
+  {
+    id: 'timestamp',
+    name: '时间戳转换',
+    description: 'Unix 时间戳 ↔ 日期，多时区与相对时间',
+    icon: IconClock,
+    route: '/timestamp',
+    component: lazy(() => import('../pages/TimestampPage')),
+  },
+  {
+    id: 'url-tool',
+    name: 'URL 工具',
+    description: 'URL 编解码 + Query 参数可视化',
+    icon: IconLink,
+    route: '/url',
+    component: lazy(() => import('../pages/UrlToolPage')),
+  },
+  {
+    id: 'cron',
+    name: 'Cron 可视化',
+    description: '解析 Cron 表达式并预览未来执行时间',
+    icon: IconCron,
+    route: '/cron',
+    component: lazy(() => import('../pages/CronPage')),
+  },
+  {
+    id: 'text-diff',
+    name: '文本对比',
+    description: '行级 diff，双栏对照 / 统一视图',
+    icon: IconDiff,
+    route: '/diff',
+    component: lazy(() => import('../pages/DiffPage')),
   },
 ]

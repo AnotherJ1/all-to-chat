@@ -1,6 +1,6 @@
 # Tool Hub
 
-> 开发者工具集合平台 — AI 聊天、图片生成、JSON 格式化、MyBatis 日志转 SQL、Base64 图片互转
+> 开发者工具集合平台 — AI 聊天、图片生成、JSON 格式化、MyBatis 日志转 SQL、Base64 图片互转、时间戳转换、URL 工具、Cron 可视化、文本对比
 
 ## 功能概览
 
@@ -11,6 +11,10 @@
 | JSON 格式化 | `/json` | JSON 格式化/压缩，Web Worker 处理超大文件 |
 | MyBatis 日志转 SQL | `/mybatis` | 自动解析 MyBatis 日志为可执行 SQL |
 | Base64 图片互转 | `/base64-image` | 图片 ↔ Base64 双向转换，自动识别 MIME，含多语言代码示例 |
+| 时间戳转换 | `/timestamp` | Unix 时间戳 ↔ 日期，自动识别秒/毫秒，多时区与相对时间 |
+| URL 工具 | `/url` | URL 编解码 + Query 参数表格化解析与编辑 |
+| Cron 可视化 | `/cron` | 解析 Cron 表达式，预览未来执行时间 |
+| 文本对比 | `/diff` | 行级 diff，双栏 / 统一视图，差异块导航跳转 |
 
 ## 技术栈
 
@@ -52,7 +56,11 @@ src/
 │   ├── ImagePage.tsx      # 图片生成页面
 │   ├── JsonFormatterPage.tsx   # JSON 格式化页面
 │   ├── MybatisLogPage.tsx     # MyBatis 日志转 SQL 页面
-│   └── Base64ImagePage.tsx    # Base64 图片互转页面
+│   ├── Base64ImagePage.tsx    # Base64 图片互转页面
+│   ├── TimestampPage.tsx      # 时间戳转换页面
+│   ├── UrlToolPage.tsx        # URL 编解码 / Query 解析页面
+│   ├── CronPage.tsx           # Cron 表达式可视化页面
+│   └── DiffPage.tsx           # 文本对比页面
 ├── registry/              # 工具注册表（声明式配置）
 ├── stores/                # Zustand 状态管理
 ├── types/                 # TypeScript 类型定义
@@ -76,6 +84,43 @@ src/
   - 代码示例区使用 `useMemo` + `useDeferredValue` + `React.memo`，输入响应优先于示例更新
 - **内存管理**：所有 ObjectURL 在切换文件 / 卸载页面时自动 `revokeObjectURL`，无泄漏
 - **A11y**：标签 / 按钮带 `role` 与 `aria-*` 标注，键盘可触发上传区
+
+## 开发者实用工具
+
+为日常开发场景内建了一组离线小工具，全部纯前端实现，零网络请求：
+
+### 时间戳转换 (`/timestamp`)
+
+- **自动识别秒 / 毫秒**：根据数值阈值（≥ 1e11 视作毫秒）自动切换单位，下拉框仍可手动覆盖
+- 双向转换：Unix 时间戳 ↔ 本地时间 ↔ ISO 8601
+- 实时刷新当前时间，一键填入
+- 多时区显示：UTC / 北京 / 东京 / 纽约 / 伦敦 / 洛杉矶
+- 相对时间描述（X 分钟前/后）
+
+### URL 工具 (`/url`)
+
+- **URL 解析**：自动拆分协议 / 主机 / 路径 / Hash，Query 参数以表格形式展示
+- 可直接增删改 Query 参数，URL 实时同步
+- **编码 / 解码**：`encodeURIComponent` 与 `encodeURI` 双模式可切，错误输入有友好提示
+- 支持仅输入 query 串（如 `?foo=1&bar=2`）的场景
+
+### Cron 表达式可视化 (`/cron`)
+
+- 同时支持 5 段（分 时 日 月 周）和 6 段（秒 分 时 日 月 周）
+- 支持 `*` `,` `-` `/` `?` 通配符
+- 字段拆解卡片化展示
+- 自然语言描述（如「工作日 9 点」）
+- 预览未来 5 / 8 / 12 / 20 / 50 次执行时间，含相对时间
+- 内置 10 个常用预设可一键填入
+
+### 文本对比 (`/diff`)
+
+- 基于 LCS 的行级 diff，无新增依赖
+- **双栏对照** 和 **统一视图** 双视图切换
+- 忽略大小写、忽略前后空白
+- **差异块导航**：上一处 / 下一处按钮 + 计数指示，一键跳转并平滑滚动到视图中心
+- 大文本输入用 `useDeferredValue` 延迟计算，避免输入卡顿
+- 一键复制为 unified patch 格式
 
 ## 主题系统
 
