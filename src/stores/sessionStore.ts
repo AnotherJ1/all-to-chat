@@ -8,6 +8,8 @@ interface SessionState {
   currentSessionId: string | null
   setCurrentSession: (id: string | null) => void
   createSession: () => Session
+  /** 创建会话但不切换 currentSessionId（用于多模型对比等后台场景） */
+  createSessionSilent: (title?: string) => Session
   deleteSession: (id: string) => void
   addMessage: (sessionId: string, message: Message) => void
   updateMessage: (sessionId: string, messageId: string, content: string) => void
@@ -35,6 +37,21 @@ export const useSessionStore = create<SessionState>()(
         set((state) => ({
           sessions: [newSession, ...state.sessions],
           currentSessionId: newSession.id,
+        }))
+        return newSession
+      },
+
+      createSessionSilent: (title) => {
+        const newSession: Session = {
+          id: uuid(),
+          title: title || '新对话',
+          messages: [],
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        }
+        set((state) => ({
+          sessions: [newSession, ...state.sessions],
+          // 不修改 currentSessionId
         }))
         return newSession
       },

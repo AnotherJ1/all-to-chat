@@ -1,21 +1,24 @@
+import { useNavigate } from 'react-router-dom'
 import { useSessionStore } from '../../stores/sessionStore'
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
-import { IconPlus, IconClose, IconSidebar } from '../common/Icons'
+import { IconPlus, IconClose, IconSidebar, IconArrowLeft } from '../common/Icons'
 
 interface SidebarProps {
   collapsed: boolean
   onToggle: () => void
+  /** 点击会话项后的额外回调（移动端用于关闭抽屉） */
+  onItemClick?: () => void
 }
 
-export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export default function Sidebar({ collapsed, onToggle, onItemClick }: SidebarProps) {
+  const navigate = useNavigate()
   const { sessions, currentSessionId, setCurrentSession, createSession, deleteSession } = useSessionStore()
 
+  // 桌面端折叠态：仅图标列；移动端不展示折叠态（移动端使用整宽抽屉）
   if (collapsed) {
     return (
-      <div
-        className="w-14 theme-sidebar flex flex-col items-center py-4 gap-3"
-      >
+      <div className="hidden md:flex w-14 theme-sidebar flex-col items-center py-4 gap-3 h-full">
         <button
           onClick={onToggle}
           className="theme-btn"
@@ -37,19 +40,36 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   }
 
   return (
-    <div className="w-64 theme-sidebar flex flex-col">
+    <div className="w-72 md:w-64 h-full theme-sidebar flex flex-col">
       {/* Header */}
-      <div className="p-4 flex items-center gap-2" style={{ borderBottom: 'var(--border-width) solid var(--border-color)' }}>
+      <div
+        className="p-3 md:p-4 flex items-center gap-2"
+        style={{ borderBottom: 'var(--border-width) solid var(--border-color)' }}
+      >
+        {/* 移动端：返回首页按钮替代「折叠侧栏」 */}
+        <button
+          onClick={() => navigate('/')}
+          className="theme-btn md:hidden"
+          style={{ padding: 0, width: '32px', height: '32px' }}
+          aria-label="返回首页"
+          title="返回首页"
+        >
+          <IconArrowLeft className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+        </button>
+        {/* 桌面端：折叠侧栏按钮 */}
         <button
           onClick={onToggle}
-          className="theme-btn"
+          className="theme-btn hidden md:flex"
           style={{ padding: 0, width: '32px', height: '32px' }}
           title="收起侧栏"
         >
           <IconSidebar className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
         </button>
         <button
-          onClick={createSession}
+          onClick={() => {
+            createSession()
+            onItemClick?.()
+          }}
           className="flex-1 theme-btn theme-btn-primary"
           style={{ padding: '8px 16px' }}
         >
@@ -70,7 +90,10 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
           {sessions.map((session) => (
             <div
               key={session.id}
-              onClick={() => setCurrentSession(session.id)}
+              onClick={() => {
+                setCurrentSession(session.id)
+                onItemClick?.()
+              }}
               className="group mb-1 cursor-pointer"
               style={{
                 padding: '10px 12px',
@@ -119,13 +142,14 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                       deleteSession(session.id)
                     }
                   }}
-                  className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center cursor-pointer"
+                  className="md:opacity-0 md:group-hover:opacity-100 w-7 h-7 md:w-6 md:h-6 flex items-center justify-center cursor-pointer flex-shrink-0"
                   style={{
                     borderRadius: 'var(--radius-sm)',
                     transition: 'var(--transition)',
                     background: 'rgba(239, 68, 68, 0.1)',
                   }}
                   title="删除对话"
+                  aria-label="删除对话"
                 >
                   <IconClose className="w-3.5 h-3.5" style={{ color: '#ef4444' }} />
                 </button>
@@ -137,7 +161,10 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
       {/* Footer */}
       <div className="p-4" style={{ borderTop: 'var(--border-width) solid var(--border-color)' }}>
-        <div className="text-xs text-center" style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>
+        <div
+          className="text-xs text-center"
+          style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}
+        >
           Tool Hub · AI Chat
         </div>
       </div>

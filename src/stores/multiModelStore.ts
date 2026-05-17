@@ -12,6 +12,8 @@ export interface MultiModelConfig {
   apiKey: string
   model: string
   enabled: boolean
+  /** 关联的对话 session id（持久化到 sessionStore），未发送过消息时为 undefined */
+  sessionId?: string
 }
 
 // 多模型状态
@@ -22,6 +24,8 @@ interface MultiModelState {
   removeModel: (id: string) => void
   toggleModel: (id: string) => void
   getEnabledModels: () => MultiModelConfig[]
+  /** 清空所有模型的 sessionId 关联（开始新对话用，不会删除已有 session 数据） */
+  resetAllSessions: () => void
 }
 
 export const useMultiModelStore = create<MultiModelState>()(
@@ -57,6 +61,11 @@ export const useMultiModelStore = create<MultiModelState>()(
         })),
 
       getEnabledModels: () => get().models.filter((m) => m.enabled),
+
+      resetAllSessions: () =>
+        set((state) => ({
+          models: state.models.map((m) => ({ ...m, sessionId: undefined })),
+        })),
     }),
     {
       name: 'multi-model-storage',

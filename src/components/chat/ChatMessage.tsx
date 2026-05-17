@@ -102,10 +102,10 @@ export default function ChatMessage({ message, onRegenerate, onDelete }: ChatMes
   }
 
   return (
-    <div className="group flex gap-4">
+    <div className="group flex gap-2 sm:gap-4">
       {/* Avatar */}
       <div
-        className="flex-shrink-0 w-10 h-10 flex items-center justify-center"
+        className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center"
         style={{
           borderRadius: 'var(--radius-sm)',
           border: 'var(--border-width) solid var(--border-color)',
@@ -116,7 +116,7 @@ export default function ChatMessage({ message, onRegenerate, onDelete }: ChatMes
           color: isUser ? 'var(--accent-1)' : 'var(--accent-3)',
         }}
       >
-        {isUser ? <IconUser className="w-5 h-5" /> : <IconBot className="w-5 h-5" />}
+        {isUser ? <IconUser className="w-4 h-4 sm:w-5 sm:h-5" /> : <IconBot className="w-4 h-4 sm:w-5 sm:h-5" />}
       </div>
 
       {/* Content */}
@@ -132,7 +132,7 @@ export default function ChatMessage({ message, onRegenerate, onDelete }: ChatMes
 
         <div
           className={isUser ? 'theme-message-user' : 'theme-message-assistant'}
-          style={{ padding: '16px' }}
+          style={{ padding: '12px' }}
         >
           {message.content ? (
             <div className="prose-chat">
@@ -152,8 +152,8 @@ export default function ChatMessage({ message, onRegenerate, onDelete }: ChatMes
           )}
         </div>
 
-        {/* 操作按钮 */}
-        <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100" style={{ transition: 'opacity 0.2s' }}>
+        {/* 操作按钮 — 移动端常显，桌面端 hover 显示 */}
+        <div className="flex items-center gap-1 mt-2 opacity-100 md:opacity-0 md:group-hover:opacity-100" style={{ transition: 'opacity 0.2s' }}>
           <button
             onClick={handleCopy}
             className="flex items-center gap-1 px-2 py-1 text-xs cursor-pointer"

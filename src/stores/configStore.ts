@@ -104,7 +104,14 @@ export const useConfigStore = create<ConfigState>()(
 
       getCurrentConfig: () => {
         const { protocol, configs } = get()
-        return configs[protocol]
+        const cfg = configs[protocol]
+        // 防御：旧版本持久化数据可能缺字段
+        return {
+          baseUrl: cfg?.baseUrl ?? '',
+          apiKey: cfg?.apiKey ?? '',
+          model: cfg?.model ?? '',
+          systemPrompt: cfg?.systemPrompt ?? '',
+        }
       },
 
       saveConfig: (name) => {

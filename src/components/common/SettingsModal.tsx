@@ -78,7 +78,7 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
         aria-hidden="true"
       />
       <div
-        className="relative w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col"
+        className="relative w-full max-w-2xl max-h-[90vh] sm:max-h-[85vh] overflow-hidden flex flex-col"
         style={{
           background: 'var(--bg-surface)',
           border: 'var(--border-width) solid var(--border-color)',
@@ -90,35 +90,38 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
         aria-label="API 配置"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6" style={{ borderBottom: 'var(--border-width) solid var(--border-color)' }}>
+        <div className="flex items-center justify-between p-4 sm:p-6" style={{ borderBottom: 'var(--border-width) solid var(--border-color)' }}>
           <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-heading)' }}>API 配置</h2>
           <button
             onClick={onClose}
             className="theme-btn"
             style={{ padding: 0, width: '32px', height: '32px' }}
+            aria-label="关闭"
           >
             <IconClose className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 p-4" style={{ borderBottom: 'var(--border-width) solid var(--border-color)', background: 'var(--bg-secondary)' }}>
+        <div className="flex gap-2 p-3 sm:p-4" style={{ borderBottom: 'var(--border-width) solid var(--border-color)', background: 'var(--bg-secondary)' }}>
           <button
             onClick={() => setActiveTab('config')}
-            className={`flex-1 py-2.5 px-4 text-sm font-semibold cursor-pointer ${activeTab === 'config' ? 'theme-btn theme-btn-primary' : 'theme-btn'}`}
+            className={`flex-1 py-2.5 px-3 sm:px-4 text-sm font-semibold cursor-pointer ${activeTab === 'config' ? 'theme-btn theme-btn-primary' : 'theme-btn'}`}
           >
             当前配置
           </button>
           <button
             onClick={() => setActiveTab('saved')}
-            className={`flex-1 py-2.5 px-4 text-sm font-semibold cursor-pointer ${activeTab === 'saved' ? 'theme-btn theme-btn-primary' : 'theme-btn'}`}
+            className={`flex-1 py-2.5 px-3 sm:px-4 text-sm font-semibold cursor-pointer ${activeTab === 'saved' ? 'theme-btn theme-btn-primary' : 'theme-btn'}`}
           >
-            保存的配置 ({savedConfigs.length})
+            <span className="hidden sm:inline">保存的配置 </span>
+            <span className="sm:hidden">已保存 </span>
+            ({savedConfigs.length})
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6" onClick={() => setShowModelList(false)}>
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6" onClick={() => setShowModelList(false)}>
           {activeTab === 'config' ? (
             <div className="space-y-6">
               {/* Protocol Selector */}
@@ -220,7 +223,7 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
               {/* Save Button */}
               <div className="pt-2">
                 {showSaveInput ? (
-                  <div className="flex gap-3">
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                     <input
                       type="text"
                       value={configName}
@@ -230,15 +233,17 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                       onKeyDown={(e) => e.key === 'Enter' && handleSaveConfig()}
                       autoFocus
                     />
-                    <button onClick={handleSaveConfig} className="theme-btn theme-btn-primary">
-                      保存
-                    </button>
-                    <button
-                      onClick={() => { setShowSaveInput(false); setConfigName('') }}
-                      className="theme-btn"
-                    >
-                      取消
-                    </button>
+                    <div className="flex gap-2 sm:gap-3">
+                      <button onClick={handleSaveConfig} className="theme-btn theme-btn-primary flex-1 sm:flex-initial">
+                        保存
+                      </button>
+                      <button
+                        onClick={() => { setShowSaveInput(false); setConfigName('') }}
+                        className="theme-btn flex-1 sm:flex-initial"
+                      >
+                        取消
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <button
@@ -268,15 +273,15 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                       borderColor: activeConfigId === sc.id ? 'var(--accent-1)' : 'var(--border-color)',
                     }}
                   >
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <div className="font-semibold" style={{ color: 'var(--text-primary)' }}>{sc.name}</div>
+                    <div className="flex items-start justify-between mb-2 gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{sc.name}</div>
                         <div className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
                           {PROTOCOLS.find(p => p.value === sc.protocol)?.label} ·{' '}
                           {new Date(sc.createdAt).toLocaleDateString('zh-CN')}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-shrink-0">
                         <button
                           onClick={() => { loadConfig(sc.id); setActiveTab('config') }}
                           className="theme-btn"

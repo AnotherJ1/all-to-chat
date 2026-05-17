@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useRef, useEffect, useCallback, useState } from 'react'
 import { useSessionStore } from '../../stores/sessionStore'
 import { useConfigStore } from '../../stores/configStore'
+import { useChatViewStore, type ChatTab } from '../../stores/chatViewStore'
 import { callApi } from '../../api'
 import { toast } from '../../stores/toastStore'
 import ComparisonPanel from './ComparisonPanel'
@@ -11,9 +12,7 @@ import ChatMessage from './ChatMessage'
 import SystemPromptInput from './SystemPromptInput'
 import { IconChat, IconCompare, IconImage, IconFolder } from '../common/Icons'
 
-type Tab = 'chat' | 'compare' | 'image' | 'sessions'
-
-const TABS: { key: Tab; label: string; Icon: React.ComponentType<{ className?: string }>; disabled?: boolean }[] = [
+const TABS: { key: ChatTab; label: string; Icon: React.ComponentType<{ className?: string }>; disabled?: boolean }[] = [
   { key: 'chat', label: '对话', Icon: IconChat },
   { key: 'compare', label: '多模型对比', Icon: IconCompare },
   { key: 'image', label: '图片生成', Icon: IconImage, disabled: true },
@@ -21,15 +20,23 @@ const TABS: { key: Tab; label: string; Icon: React.ComponentType<{ className?: s
 ]
 
 export default function ChatView() {
-  const [activeTab, setActiveTab] = useState<Tab>('chat')
+  const { activeTab, setActiveTab } = useChatViewStore()
   const { getCurrentSession, updateMessage, deleteMessage } = useSessionStore()
   const currentSession = getCurrentSession()
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
+  // 已挂载过的 Tab 集合：首次访问后才挂载，挂载后保留状态不卸载
+  const [mountedTabs, setMountedTabs] = useState<Set<ChatTab>>(new Set([activeTab]))
+  useEffect(() => {
+    setMountedTabs((prev) => prev.has(activeTab) ? prev : new Set(prev).add(activeTab))
+  }, [activeTab])
+
   // 自动滚动到底部
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [currentSession?.messages])
+    if (activeTab === 'chat') {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [currentSession?.messages, activeTab])
 
   // 重新生成最后一条 assistant 消息
   const handleRegenerate = useCallback(async (messageId: string) => {
@@ -66,9 +73,8 @@ export default function ChatView() {
         },
       })
     } catch (error) {
-      if ((error as Error).name !== 'AbortError') {
-        toast.error(`重新生成失败: ${(error as Error).message}`)
-      }
+      // AbortError 不打扰用户；其他错误已在 onError 中提示
+      void error
     }
   }, [currentSession, updateMessage])
 
@@ -79,66 +85,12 @@ export default function ChatView() {
     }
   }, [currentSession, deleteMessage])
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'chat':
-        return (
-          <div className="flex flex-col h-full">
-            <SystemPromptInput />
-            <div className="flex-1 overflow-y-auto px-6 py-4">
-              {currentSession && currentSession.messages.length > 0 ? (
-                <div className="space-y-4 max-w-4xl mx-auto">
-                  {currentSession.messages.map((msg) => (
-                    <ChatMessage
-                      key={msg.id}
-                      message={msg}
-                      onRegenerate={msg.role === 'assistant' ? () => handleRegenerate(msg.id) : undefined}
-                      onDelete={() => handleDelete(msg.id)}
-                    />
-                  ))}
-                  <div ref={messagesEndRef} />
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full">
-                  <div
-                    className="w-20 h-20 flex items-center justify-center mb-4"
-                    style={{
-                      borderRadius: 'var(--radius)',
-                      border: 'var(--border-width) solid var(--border-color)',
-                      background: 'color-mix(in srgb, var(--accent-1) 10%, transparent)',
-                      boxShadow: 'var(--shadow-md)',
-                    }}
-                  >
-                    <IconChat className="w-10 h-10" style={{ color: 'var(--accent-1)', opacity: 0.7 }} />
-                  </div>
-                  <p className="text-lg mb-2 font-bold" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-heading)' }}>开始与 AI 对话</p>
-                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>发送消息开启智能对话体验</p>
-                </div>
-              )}
-            </div>
-            <div className="px-6 py-4">
-              <div className="max-w-4xl mx-auto">
-                <MessageInput />
-              </div>
-            </div>
-          </div>
-        )
-      case 'compare':
-        return <ComparisonPanel />
-      case 'image':
-        return <ImageGenerator />
-      case 'sessions':
-        return <SessionManager />
-      default:
-        return null
-    }
-  }
-
   return (
     <div className="flex flex-col h-full">
-      {/* Tab 导航 */}
+      {/* Tab 导航 — 移动端可横向滚动 */}
       <div
-        className="flex items-center gap-1 px-6 py-2 theme-topbar"
+        className="flex items-center gap-1 px-3 sm:px-6 py-2 theme-topbar overflow-x-auto whitespace-nowrap"
+        style={{ scrollbarWidth: 'none' }}
       >
         {TABS.map((tab) => (
           <button
@@ -150,11 +102,10 @@ export default function ChatView() {
               }
               setActiveTab(tab.key)
             }}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold cursor-pointer"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm font-semibold cursor-pointer flex-shrink-0"
             style={{
               fontFamily: 'var(--font-body)',
               color: activeTab === tab.key ? 'var(--accent-1)' : 'var(--text-muted)',
-              borderBottom: activeTab === tab.key ? '2px solid var(--accent-1)' : '2px solid transparent',
               transition: 'var(--transition)',
               background: 'transparent',
               border: 'none',
@@ -165,15 +116,65 @@ export default function ChatView() {
             }}
           >
             <tab.Icon className="w-4 h-4" />
-            <span className="hidden sm:inline">{tab.label}</span>
+            <span>{tab.label}</span>
           </button>
         ))}
       </div>
 
-      {/* 内容区域 */}
-      <div className="flex-1 overflow-hidden">{renderContent()}</div>
+      {/* 内容区域 — 用 display 切换保留各 Tab 内部状态（不卸载） */}
+      <div className="flex-1 overflow-hidden min-h-0 relative">
+        <div className="absolute inset-0" style={{ display: activeTab === 'chat' ? 'flex' : 'none', flexDirection: 'column' }}>
+          <SystemPromptInput />
+          <div className="flex-1 overflow-y-auto px-3 py-3 sm:px-6 sm:py-4">
+            {currentSession && currentSession.messages.length > 0 ? (
+              <div className="space-y-4 max-w-4xl mx-auto">
+                {currentSession.messages.map((msg) => (
+                  <ChatMessage
+                    key={msg.id}
+                    message={msg}
+                    onRegenerate={msg.role === 'assistant' ? () => handleRegenerate(msg.id) : undefined}
+                    onDelete={() => handleDelete(msg.id)}
+                  />
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full px-4">
+                <div
+                  className="w-20 h-20 flex items-center justify-center mb-4"
+                  style={{
+                    borderRadius: 'var(--radius)',
+                    border: 'var(--border-width) solid var(--border-color)',
+                    background: 'color-mix(in srgb, var(--accent-1) 10%, transparent)',
+                    boxShadow: 'var(--shadow-md)',
+                  }}
+                >
+                  <IconChat className="w-10 h-10" style={{ color: 'var(--accent-1)', opacity: 0.7 }} />
+                </div>
+                <p className="text-lg mb-2 font-bold text-center" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-heading)' }}>开始与 AI 对话</p>
+                <p className="text-sm text-center" style={{ color: 'var(--text-muted)' }}>发送消息开启智能对话体验</p>
+              </div>
+            )}
+          </div>
+          <div className="px-3 py-3 sm:px-6 sm:py-4">
+            <div className="max-w-4xl mx-auto">
+              <MessageInput />
+            </div>
+          </div>
+        </div>
+
+        <div className="absolute inset-0" style={{ display: activeTab === 'compare' ? 'block' : 'none' }}>
+          {mountedTabs.has('compare') && <ComparisonPanel />}
+        </div>
+
+        <div className="absolute inset-0" style={{ display: activeTab === 'image' ? 'block' : 'none' }}>
+          {mountedTabs.has('image') && <ImageGenerator />}
+        </div>
+
+        <div className="absolute inset-0" style={{ display: activeTab === 'sessions' ? 'block' : 'none' }}>
+          {mountedTabs.has('sessions') && <SessionManager />}
+        </div>
+      </div>
     </div>
   )
 }
-
-

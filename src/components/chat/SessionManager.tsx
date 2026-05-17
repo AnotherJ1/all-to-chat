@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useSessionStore } from '../../stores/sessionStore'
+import { useChatViewStore } from '../../stores/chatViewStore'
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
-import { IconPlus, IconSearch, IconExport, IconDownload, IconTrash } from '../common/Icons'
+import { IconPlus, IconSearch, IconExport, IconDownload, IconTrash, IconChat } from '../common/Icons'
 import { toast } from '../../stores/toastStore'
 
 export default function SessionManager() {
@@ -13,6 +14,7 @@ export default function SessionManager() {
     createSession,
     deleteSession,
   } = useSessionStore()
+  const setActiveTab = useChatViewStore((s) => s.setActiveTab)
 
   const [searchQuery, setSearchQuery] = useState('')
   const [filteredSessions, setFilteredSessions] = useState(sessions)
@@ -62,11 +64,17 @@ export default function SessionManager() {
     toast.success(`已导出: ${filename}`)
   }
 
+  const handleRestore = (sessionId: string) => {
+    setCurrentSession(sessionId)
+    setActiveTab('chat')
+    toast.success('已恢复到对话页')
+  }
+
   return (
-    <div className="h-full flex flex-col p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-heading)' }}>会话管理</h2>
-        <button onClick={createSession} className="theme-btn theme-btn-primary" style={{ padding: '8px 16px', fontSize: '13px' }}>
+    <div className="h-full flex flex-col p-3 sm:p-6">
+      <div className="flex justify-between items-center mb-4 gap-3">
+        <h2 className="text-lg font-bold truncate" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-heading)' }}>会话管理</h2>
+        <button onClick={createSession} className="theme-btn theme-btn-primary flex-shrink-0" style={{ padding: '8px 16px', fontSize: '13px' }}>
           <IconPlus className="w-4 h-4" />
           <span>新建对话</span>
         </button>
@@ -100,10 +108,10 @@ export default function SessionManager() {
                 padding: '16px',
                 borderColor: currentSessionId === session.id ? 'var(--accent-1)' : 'var(--border-color)',
                 background: currentSessionId === session.id ? 'color-mix(in srgb, var(--accent-1) 8%, var(--bg-surface))' : 'var(--bg-surface)',
+                cursor: 'default',
               }}
-              onClick={() => setCurrentSession(session.id)}
             >
-              <div className="flex justify-between items-start">
+              <div className="flex justify-between items-start gap-2">
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold truncate" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-body)' }}>
                     {session.title || '新对话'}
@@ -112,12 +120,22 @@ export default function SessionManager() {
                     {format(session.updatedAt, 'MM/dd HH:mm', { locale: zhCN })} · {session.messages.length} 条消息
                   </div>
                 </div>
-                <div className="flex items-center gap-1 ml-2">
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleRestore(session.id) }}
+                    className="theme-btn theme-btn-primary"
+                    style={{ padding: '4px 10px', fontSize: '12px' }}
+                    title="恢复到对话页继续聊天"
+                  >
+                    <IconChat className="w-3.5 h-3.5" />
+                    <span>恢复</span>
+                  </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); handleExport(session.id, 'json') }}
                     className="p-1.5 cursor-pointer"
                     style={{ color: 'var(--text-muted)', borderRadius: 'var(--radius-sm)', transition: 'var(--transition)' }}
                     title="导出 JSON"
+                    aria-label="导出 JSON"
                   >
                     <IconDownload className="w-3.5 h-3.5" />
                   </button>
@@ -126,6 +144,7 @@ export default function SessionManager() {
                     className="p-1.5 cursor-pointer"
                     style={{ color: 'var(--text-muted)', borderRadius: 'var(--radius-sm)', transition: 'var(--transition)' }}
                     title="导出 Markdown"
+                    aria-label="导出 Markdown"
                   >
                     <IconExport className="w-3.5 h-3.5" />
                   </button>
@@ -134,13 +153,19 @@ export default function SessionManager() {
                     className="p-1.5 cursor-pointer"
                     style={{ color: 'var(--text-muted)', borderRadius: 'var(--radius-sm)', transition: 'var(--transition)' }}
                     title="删除"
+                    aria-label="删除"
                   >
                     <IconTrash className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
               {session.messages.length > 0 && (
-                <div className="mt-2 text-xs truncate" style={{ color: 'var(--text-muted)', opacity: 0.6 }}>
+                <div
+                  className="mt-2 text-xs truncate cursor-pointer"
+                  style={{ color: 'var(--text-muted)', opacity: 0.7 }}
+                  onClick={() => handleRestore(session.id)}
+                  title="点击恢复到对话页"
+                >
                   {session.messages[session.messages.length - 1]?.content.slice(0, 80)}
                 </div>
               )}

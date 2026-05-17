@@ -95,10 +95,9 @@ export default function MessageInput() {
         },
       })
     } catch (error) {
+      // 仅处理 AbortError，普通错误已在 onError 中提示，避免重复 toast
       if ((error as Error).name === 'AbortError') {
         toast.info('已停止生成')
-      } else {
-        toast.error(`请求失败: ${(error as Error).message}`)
       }
     } finally {
       setIsStreaming(false)
