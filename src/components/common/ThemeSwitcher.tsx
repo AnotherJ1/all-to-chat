@@ -8,7 +8,7 @@ export default function ThemeSwitcher() {
   const { style, switcherOpen, setStyle, toggleSwitcher } = useThemeStore()
 
   return (
-    <div className="fixed bottom-5 right-5 z-[999]">
+    <div className="fixed bottom-24 right-5 z-[999] md:bottom-5">
       {/* 展开面板 */}
       {switcherOpen && (
         <div

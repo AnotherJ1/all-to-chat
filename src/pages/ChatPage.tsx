@@ -69,14 +69,16 @@ export default function ChatPage() {
       </div>
 
       {/* 桌面端：设置按钮（移动端在顶部工具栏） */}
-      <button
-        onClick={() => setShowSettings(true)}
-        className="hidden md:flex fixed top-4 right-4 z-50 w-10 h-10 items-center justify-center theme-btn"
-        style={{ padding: '0', width: '40px', height: '40px' }}
-        title="API 设置"
-      >
-        <IconSettings className="w-5 h-5" style={{ color: 'var(--text-primary)' }} />
-      </button>
+      <div className="hidden md:block">
+        <button
+          onClick={() => setShowSettings(true)}
+          className="fixed top-4 right-4 z-50 w-10 h-10 flex items-center justify-center theme-btn"
+          style={{ padding: '0', width: '40px', height: '40px' }}
+          title="API 设置"
+        >
+          <IconSettings className="w-5 h-5" style={{ color: 'var(--text-primary)' }} />
+        </button>
+      </div>
 
       {/* 移动端抽屉遮罩 */}
       {drawerOpen && (
