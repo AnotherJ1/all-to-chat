@@ -15,8 +15,87 @@ export interface ParseResult {
   rawParameters: string
 }
 
-/** 需要加单引号的类型 */
-const QUOTED_TYPES = new Set(['String', 'Date', 'Timestamp'])
+/**
+ * 需要加单引号的类型集合
+ * 涵盖 MyBatis/JDBC 常见的字符串、时间、二进制、JSON、UUID 等需要字面量引号的类型
+ */
+const QUOTED_TYPES = new Set([
+  // 字符串相关
+  'String',
+  'Character',
+  'Char',
+  'NString',
+  'NChar',
+  'NVarchar',
+  'Varchar',
+  'Clob',
+  'NClob',
+  'LongVarChar',
+  'LongNVarChar',
+  // JDK8 时间类型
+  'LocalDate',
+  'LocalTime',
+  'LocalDateTime',
+  'OffsetDateTime',
+  'OffsetTime',
+  'ZonedDateTime',
+  'Instant',
+  'Year',
+  'YearMonth',
+  'MonthDay',
+  // 经典时间类型
+  'Date',
+  'Time',
+  'Timestamp',
+  'SqlDate',
+  'SqlTime',
+  'SqlTimestamp',
+  // 二进制类型（按字符串字面量处理，便于查看）
+  'Blob',
+  'Clob ',
+  'Bytes',
+  'ByteArray',
+  // 其他需要引号的类型
+  'UUID',
+  'JSON',
+  'Json',
+  'Jsonb',
+  'Object',
+  'Enum',
+  'Url',
+  'URI',
+])
+
+/** 数值类型集合（不加引号） */
+const NUMERIC_TYPES = new Set([
+  'Byte',
+  'Short',
+  'Integer',
+  'Int',
+  'Long',
+  'Float',
+  'Double',
+  'BigDecimal',
+  'BigInteger',
+  'Number',
+  'Decimal',
+  'Numeric',
+  'Real',
+  'TinyInt',
+  'SmallInt',
+  'MediumInt',
+  'BigInt',
+])
+
+/** 布尔类型集合（不加引号） */
+const BOOLEAN_TYPES = new Set(['Boolean', 'Bool', 'Bit'])
+
+/**
+ * 转义 SQL 字符串字面量中的单引号，防止破坏 SQL 结构
+ */
+function escapeSqlString(value: string): string {
+  return value.replace(/'/g, "''")
+}
 
 /**
  * 解析单个参数字符串，如 "John(String)" 或 "1(Integer)" 或 "null"
@@ -40,12 +119,27 @@ function formatParamValue(raw: string): string {
   const value = match[1]
   const type = match[2]
 
-  // 根据类型决定是否加引号
-  if (QUOTED_TYPES.has(type)) {
-    return `'${value}'`
+  // 数值/布尔类型直接返回，不加引号
+  if (NUMERIC_TYPES.has(type) || BOOLEAN_TYPES.has(type)) {
+    return value
   }
 
-  return value
+  // 已知的需加引号类型
+  if (QUOTED_TYPES.has(type)) {
+    return `'${escapeSqlString(value)}'`
+  }
+
+  // 未知类型兜底策略：
+  // 1) 纯数字（含负号、小数）当作数值不加引号
+  // 2) true/false 当作布尔不加引号
+  // 3) 其他一律按字符串处理，加引号，避免破坏 SQL 可执行性（如 LocalDateTime、自定义 TypeHandler 等）
+  if (/^-?\d+(\.\d+)?$/.test(value)) {
+    return value
+  }
+  if (value === 'true' || value === 'false') {
+    return value
+  }
+  return `'${escapeSqlString(value)}'`
 }
 
 /**

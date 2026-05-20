@@ -206,4 +206,81 @@ INFO: Query completed
     expect(results).toHaveLength(1)
     expect(results[0].sql).toBe("SELECT * FROM user WHERE id = 42 AND status = 'active'")
   })
+
+  it('LocalDateTime 类型参数加单引号', () => {
+    const input = `==>  Preparing: SELECT * FROM scp_purchase_task WHERE generated_time < ?
+==> Parameters: 2026-05-11T17:48:15.015991(LocalDateTime)`
+
+    const results = parseMybatisLog(input)
+    expect(results[0].sql).toBe("SELECT * FROM scp_purchase_task WHERE generated_time < '2026-05-11T17:48:15.015991'")
+  })
+
+  it('LocalDate / LocalTime 类型参数加单引号', () => {
+    const input = `==>  Preparing: SELECT * FROM t WHERE d = ? AND t = ?
+==> Parameters: 2026-05-11(LocalDate), 17:48:15(LocalTime)`
+
+    const results = parseMybatisLog(input)
+    expect(results[0].sql).toBe("SELECT * FROM t WHERE d = '2026-05-11' AND t = '17:48:15'")
+  })
+
+  it('OffsetDateTime / ZonedDateTime / Instant 类型参数加单引号', () => {
+    const input = `==>  Preparing: SELECT * FROM t WHERE a = ? AND b = ? AND c = ?
+==> Parameters: 2026-05-11T17:48:15+08:00(OffsetDateTime), 2026-05-11T17:48:15+08:00[Asia/Shanghai](ZonedDateTime), 2026-05-11T09:48:15Z(Instant)`
+
+    const results = parseMybatisLog(input)
+    expect(results[0].sql).toBe(
+      "SELECT * FROM t WHERE a = '2026-05-11T17:48:15+08:00' AND b = '2026-05-11T17:48:15+08:00[Asia/Shanghai]' AND c = '2026-05-11T09:48:15Z'"
+    )
+  })
+
+  it('UUID 类型参数加单引号', () => {
+    const input = `==>  Preparing: SELECT * FROM t WHERE id = ?
+==> Parameters: 550e8400-e29b-41d4-a716-446655440000(UUID)`
+
+    const results = parseMybatisLog(input)
+    expect(results[0].sql).toBe("SELECT * FROM t WHERE id = '550e8400-e29b-41d4-a716-446655440000'")
+  })
+
+  it('Short / Byte / BigInteger 类型参数不加引号', () => {
+    const input = `==>  Preparing: SELECT * FROM t WHERE a = ? AND b = ? AND c = ?
+==> Parameters: 1(Short), 2(Byte), 99999999999999(BigInteger)`
+
+    const results = parseMybatisLog(input)
+    expect(results[0].sql).toBe('SELECT * FROM t WHERE a = 1 AND b = 2 AND c = 99999999999999')
+  })
+
+  it('字符串值中的单引号需要被转义', () => {
+    const input = `==>  Preparing: SELECT * FROM user WHERE name = ?
+==> Parameters: O'Brien(String)`
+
+    const results = parseMybatisLog(input)
+    expect(results[0].sql).toBe("SELECT * FROM user WHERE name = 'O''Brien'")
+  })
+
+  it('未知类型按字符串处理（兜底策略）', () => {
+    const input = `==>  Preparing: SELECT * FROM t WHERE col = ?
+==> Parameters: hello-world(SomeCustomType)`
+
+    const results = parseMybatisLog(input)
+    expect(results[0].sql).toBe("SELECT * FROM t WHERE col = 'hello-world'")
+  })
+
+  it('未知类型但值为纯数字时不加引号', () => {
+    const input = `==>  Preparing: SELECT * FROM t WHERE col = ?
+==> Parameters: 123.45(MysteryNumeric)`
+
+    const results = parseMybatisLog(input)
+    expect(results[0].sql).toBe('SELECT * FROM t WHERE col = 123.45')
+  })
+
+  it('真实场景：scp_purchase_task 多个 LocalDateTime 参数', () => {
+    const input = `==>  Preparing: SELECT \`status\`,\`generated_time\` FROM \`scp_purchase_task\` WHERE ( ( \`status\` = ? and \`generated_time\` < ? ) or ( \`status\` = ? and \`claimed_time\` < ? ) or ( \`status\` = ? and \`completed_time\` > ? ) )
+==> Parameters: 10(Integer), 2026-05-11T17:48:15.015991(LocalDateTime), 20(Integer), 2026-05-10T17:48:15.015991(LocalDateTime), 50(Integer), 2026-05-13T16:48:15.015991(LocalDateTime)`
+
+    const results = parseMybatisLog(input)
+    expect(results).toHaveLength(1)
+    expect(results[0].sql).toBe(
+      "SELECT `status`,`generated_time` FROM `scp_purchase_task` WHERE ( ( `status` = 10 and `generated_time` < '2026-05-11T17:48:15.015991' ) or ( `status` = 20 and `claimed_time` < '2026-05-10T17:48:15.015991' ) or ( `status` = 50 and `completed_time` > '2026-05-13T16:48:15.015991' ) )"
+    )
+  })
 })
