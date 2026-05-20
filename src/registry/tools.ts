@@ -1,6 +1,6 @@
 import { lazy } from 'react'
 import type { ToolMeta } from '../types'
-import { IconChat, IconImage, IconJson, IconDatabase, IconBase64, IconClock, IconLink, IconCron, IconDiff } from '../components/common/Icons'
+import { IconChat, IconImage, IconJson, IconDatabase, IconBase64, IconClock, IconLink, IconCron, IconDiff, IconCollage } from '../components/common/Icons'
 
 /**
  * 工具注册表 — 平台所有可用工具的声明式配置
@@ -79,5 +79,13 @@ export const toolRegistry: ToolMeta[] = [
     icon: IconDiff,
     route: '/diff',
     component: lazy(() => import('../pages/DiffPage')),
+  },
+  {
+    id: 'collage',
+    name: '自由拼图',
+    description: '多图自由画布：拖动、缩放，一键导出 PNG / JPG / 剪贴板',
+    icon: IconCollage,
+    route: '/collage',
+    component: lazy(() => import('../pages/CollagePage')),
   },
 ]

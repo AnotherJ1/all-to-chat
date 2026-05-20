@@ -258,3 +258,15 @@ export function IconDiff({ className = 'w-5 h-5', style }: IconProps) {
     </svg>
   )
 }
+
+/** 拼图工具图标：四个错位的图片矩形象征自由画布拼贴 */
+export function IconCollage({ className = 'w-5 h-5', style }: IconProps) {
+  return (
+    <svg className={className} style={style} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+      <rect x="3" y="3" width="9" height="9" rx="1.5" />
+      <rect x="13" y="5" width="8" height="7" rx="1.5" />
+      <rect x="3" y="13" width="7" height="8" rx="1.5" />
+      <rect x="11" y="13" width="10" height="8" rx="1.5" />
+    </svg>
+  )
+}
