@@ -184,10 +184,15 @@ function parseParameters(paramStr: string): string[] {
  * 将 SQL 模板中的 ? 占位符替换为实际参数值
  */
 function replacePlaceholders(sql: string, params: string[]): string {
-  let result = sql
-  for (const param of params) {
-    const formattedValue = formatParamValue(param)
-    result = result.replace('?', formattedValue)
+  const parts = sql.split('?')
+  let result = parts[0]
+  for (let i = 0; i < params.length && i < parts.length - 1; i++) {
+    const formattedValue = formatParamValue(params[i])
+    result += formattedValue + parts[i + 1]
+  }
+  // 兜底处理：如果参数比问号少，将剩余的问号保留
+  for (let i = params.length; i < parts.length - 1; i++) {
+    result += '?' + parts[i + 1]
   }
   return result
 }

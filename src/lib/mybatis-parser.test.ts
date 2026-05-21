@@ -283,4 +283,13 @@ INFO: Query completed
       "SELECT `status`,`generated_time` FROM `scp_purchase_task` WHERE ( ( `status` = 10 and `generated_time` < '2026-05-11T17:48:15.015991' ) or ( `status` = 20 and `claimed_time` < '2026-05-10T17:48:15.015991' ) or ( `status` = 50 and `completed_time` > '2026-05-13T16:48:15.015991' ) )"
     )
   })
+
+  it('参数值中包含问号 ? 时不应被错误地作为占位符替换', () => {
+    const input = `==>  Preparing: SELECT * FROM user WHERE name = ? AND age = ?
+==> Parameters: what?(String), 18(Integer)`
+
+    const results = parseMybatisLog(input)
+    expect(results).toHaveLength(1)
+    expect(results[0].sql).toBe("SELECT * FROM user WHERE name = 'what?' AND age = 18")
+  })
 })
