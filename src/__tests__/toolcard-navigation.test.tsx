@@ -45,7 +45,7 @@ function TestApp() {
 }
 
 describe('Property 3: 工具卡片导航正确性', () => {
-  it.each(toolRegistry.map((tool) => [tool.name, tool.route, tool.id]))(
+  it.each(toolRegistry.filter((t) => !t.disabled).map((tool) => [tool.name, tool.route, tool.id]))(
     '点击工具卡片 "%s" 应导航到路由 "%s"',
     (name, expectedRoute, id) => {
       render(

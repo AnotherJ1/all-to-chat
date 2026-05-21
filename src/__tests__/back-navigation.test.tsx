@@ -15,6 +15,7 @@ import { Suspense } from 'react'
 import HomePage from '../pages/HomePage'
 import ChatPage from '../pages/ChatPage'
 import ImagePage from '../pages/ImagePage'
+import QrCodePage from '../pages/QrCodePage'
 import { toolRegistry } from '../registry/tools'
 
 /**
@@ -23,6 +24,7 @@ import { toolRegistry } from '../registry/tools'
 const pageComponents: Record<string, React.ComponentType> = {
   '/chat': ChatPage,
   '/image': ImagePage,
+  '/qr-code': QrCodePage,
 }
 
 /**
@@ -60,10 +62,12 @@ describe('Property 5: 工具页面返回导航', () => {
         </MemoryRouter>,
       )
 
-      // 等待组件渲染完成，找到返回首页按钮
-      const backButton = await waitFor(() =>
-        screen.getByLabelText('返回首页'),
-      )
+      // 等待组件渲染完成，找到返回首页按钮（可能因为多端布局存在多个匹配，取第一个）
+      const backButton = await waitFor(() => {
+        const buttons = screen.getAllByLabelText('返回首页')
+        if (buttons.length === 0) throw new Error('No back button found')
+        return buttons[0]
+      })
       expect(backButton).toBeInTheDocument()
 
       // 点击返回首页按钮

@@ -1,6 +1,6 @@
 import { lazy } from 'react'
 import type { ToolMeta } from '../types'
-import { IconChat, IconImage, IconJson, IconDatabase, IconBase64, IconClock, IconLink, IconCron, IconDiff, IconCollage } from '../components/common/Icons'
+import { IconChat, IconImage, IconJson, IconDatabase, IconBase64, IconClock, IconLink, IconCron, IconDiff, IconCollage, IconQrCode } from '../components/common/Icons'
 
 /**
  * 工具注册表 — 平台所有可用工具的声明式配置
@@ -87,5 +87,13 @@ export const toolRegistry: ToolMeta[] = [
     icon: IconCollage,
     route: '/collage',
     component: lazy(() => import('../pages/CollagePage')),
+  },
+  {
+    id: 'qr-code',
+    name: '二维码工具',
+    description: '二维码快速生成与解析，支持自定义 Logo 和颜色',
+    icon: IconQrCode,
+    route: '/qr-code',
+    component: lazy(() => import('../pages/QrCodePage')),
   },
 ]

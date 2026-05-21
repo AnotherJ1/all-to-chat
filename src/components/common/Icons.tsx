@@ -270,3 +270,12 @@ export function IconCollage({ className = 'w-5 h-5', style }: IconProps) {
     </svg>
   )
 }
+
+export function IconQrCode({ className = 'w-5 h-5', style }: IconProps) {
+  return (
+    <svg className={className} style={style} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125v3.75c0 .621-.504 1.125-1.125 1.125h-3.75A1.125 1.125 0 013.75 8.625v-3.75zM3.75 15.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125v3.75c0 .621-.504 1.125-1.125 1.125h-3.75a1.125 1.125 0 01-1.125-1.125v-3.75zM15.375 3.75c-.621 0-1.125.504-1.125 1.125v3.75c0 .621.504 1.125 1.125 1.125h3.75c.621 0 1.125-.504 1.125-1.125v-3.75c0-.621-.504-1.125-1.125-1.125h-3.75zM14.25 14.25h1.5v1.5h-1.5v-1.5zM17.25 17.25h1.5v1.5h-1.5v-1.5zM14.25 18.75h1.5v1.5h-1.5v-1.5zM18.75 14.25h1.5v1.5h-1.5v-1.5zM17.25 14.25h1.5v1.5h-1.5v-1.5zM14.25 17.25h1.5v1.5h-1.5v-1.5zM18.75 18.75h1.5v1.5h-1.5v-1.5zM18.75 17.25h1.5v1.5h-1.5v-1.5z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 6.75h1.5v1.5h-1.5v-1.5zM6.75 17.25h1.5v1.5h-1.5v-1.5zM17.25 6.75h1.5v1.5h-1.5v-1.5z" />
+    </svg>
+  )
+}
