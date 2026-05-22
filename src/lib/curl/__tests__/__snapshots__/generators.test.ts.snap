@@ -1,0 +1,146 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`generateCode - axios > POST JSON snapshot 1`] = `
+"// axios 请求
+import axios from 'axios'
+
+const response = await axios({
+  method: 'post',
+  url: 'https://api.example.com/login',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  data: {"user":"alice","pwd":"123"},
+})
+console.log(response.data)
+"
+`;
+
+exports[`generateCode - fetch > GET snapshot 1`] = `
+"// fetch 请求
+const response = await fetch('https://api.example.com/users?page=1', {
+  method: 'GET',
+  headers: {
+    'Accept': 'application/json',
+  },
+})
+const data = await response.json()
+console.log(data)
+"
+`;
+
+exports[`generateCode - fetch > POST JSON snapshot 1`] = `
+"// fetch 请求
+const response = await fetch('https://api.example.com/login', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({"user":"alice","pwd":"123"}),
+})
+const data = await response.json()
+console.log(data)
+"
+`;
+
+exports[`generateCode - go-net-http > POST JSON snapshot 1`] = `
+"// Go net/http 请求
+package main
+
+import (
+	"fmt"
+	"io"
+	"net/http"
+	"strings"
+)
+
+func main() {
+	body := strings.NewReader("{\\"user\\":\\"alice\\",\\"pwd\\":\\"123\\"}")
+	req, err := http.NewRequest("POST", "https://api.example.com/login", body)
+	if err != nil { panic(err) }
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil { panic(err) }
+	defer resp.Body.Close()
+	data, _ := io.ReadAll(resp.Body)
+	fmt.Println(string(data))
+}
+"
+`;
+
+exports[`generateCode - java-okhttp > POST JSON snapshot 1`] = `
+"// Java OkHttp 请求
+import okhttp3.*;
+
+OkHttpClient client = new OkHttpClient();
+MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+RequestBody body = RequestBody.create("{\\"user\\":\\"alice\\",\\"pwd\\":\\"123\\"}", JSON);
+Request.Builder builder = new Request.Builder()
+    .url("https://api.example.com/login")
+    .post(body)
+    ;
+builder.addHeader("Content-Type", "application/json");
+Request request = builder.build();
+try (Response response = client.newCall(request).execute()) {
+    System.out.println(response.body().string());
+}
+"
+`;
+
+exports[`generateCode - node-http > GET snapshot 1`] = `
+"// Node https 请求
+import https from 'https'
+import { URL } from 'url'
+
+const target = new URL('https://api.example.com/users?page=1')
+const options = {
+  hostname: target.hostname,
+  port: target.port || (target.protocol === 'https:' ? 443 : 80),
+  path: target.pathname + target.search,
+  method: 'GET',
+  headers: {
+    'Accept': 'application/json',
+  },
+}
+
+const req = https.request(options, (res) => {
+  let data = ''
+  res.on('data', (chunk) => { data += chunk })
+  res.on('end', () => { console.log(data) })
+})
+req.on('error', (err) => { console.error(err) })
+req.end()
+"
+`;
+
+exports[`generateCode - php-curl > POST JSON snapshot 1`] = `
+"<?php
+// PHP curl 请求
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, 'https://api.example.com/login');
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    'Content-Type: application/json',
+]);
+curl_setopt($ch, CURLOPT_POSTFIELDS, '{"user":"alice","pwd":"123"}');
+$response = curl_exec($ch);
+curl_close($ch);
+echo $response;
+"
+`;
+
+exports[`generateCode - python-requests > POST JSON snapshot 1`] = `
+"# Python requests 请求
+import requests
+
+response = requests.post(
+    'https://api.example.com/login',
+    headers={
+    'Content-Type': 'application/json',
+},
+    json={"user":"alice","pwd":"123"},
+)
+print(response.text)
+"
+`;

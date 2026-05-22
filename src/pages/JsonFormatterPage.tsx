@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import BackToHome from '../components/common/BackToHome'
 import { useJsonHistoryStore } from '../stores/jsonHistoryStore'
 
@@ -115,8 +116,16 @@ function JsonArray({ arr, indent, fontSize }: { arr: unknown[]; indent: number; 
 
 // ============ 主页面组件 ============
 
+/** 路由 state 协议：从 /data-convert "在 JSON 中打开" 时携带 { content } 预填 */
+interface JsonNavState {
+  content?: string
+}
+
 export default function JsonFormatterPage() {
-  const [input, setInput] = useState('')
+  const navigate = useNavigate()
+  const location = useLocation()
+  const navState = (location.state || {}) as JsonNavState
+  const [input, setInput] = useState(navState.content ?? '')
   const [output, setOutput] = useState('')
   const [parsedJson, setParsedJson] = useState<unknown>(undefined)
   const [error, setError] = useState('')
@@ -292,6 +301,13 @@ export default function JsonFormatterPage() {
           <button className="theme-btn" onClick={handleCopy} disabled={!output} title="复制结果">{copySuccess ? '已复制 ✓' : '复制'}</button>
           <button className="theme-btn" onClick={handleSave} disabled={!output} title="保存到历史记录">保存</button>
           <button className="theme-btn" onClick={handleClear} title="清空输入和输出">清空</button>
+          <button
+            className="theme-btn"
+            onClick={() => navigate('/data-convert', { state: { from: 'json', content: input } })}
+            title="跳转到数据格式互转工具"
+          >
+            互转其他格式 →
+          </button>
         </div>
 
         {/* 右侧：预览区 */}

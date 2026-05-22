@@ -1,6 +1,9 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import BackToHome from '../components/common/BackToHome'
 import { diffText, type DiffLine } from '../lib/text-diff'
+import { tryParseJson } from '../lib/diff/json-diff'
+import JsonDiffView from '../components/diff/JsonDiffView'
+import { useDiffStore, type DiffMode } from '../stores/diffStore'
 import { toast } from '../stores/toastStore'
 
 /**
@@ -24,9 +27,27 @@ export default function DiffPage() {
   const [ignoreWs, setIgnoreWs] = useState(false)
   const [view, setView] = useState<ViewMode>('split')
 
+  // 来自持久化 store：JSON 模式偏好
+  const mode = useDiffStore((s) => s.mode)
+  const setMode = useDiffStore((s) => s.setMode)
+  const sortArrayKeys = useDiffStore((s) => s.sortArrayKeys)
+  const setSortArrayKeys = useDiffStore((s) => s.setSortArrayKeys)
+
   // 大文本时延迟计算，避免输入卡顿
   const deferredLeft = useDeferredValue(left)
   const deferredRight = useDeferredValue(right)
+
+  // 智能识别：两侧均合法 JSON → 走结构化对比
+  const leftJson = useMemo(() => tryParseJson(deferredLeft), [deferredLeft])
+  const rightJson = useMemo(() => tryParseJson(deferredRight), [deferredRight])
+
+  /** 实际渲染模式：auto 时根据 JSON 解析结果决策 */
+  const effectiveMode: 'text' | 'json' = useMemo(() => {
+    if (mode === 'text') return 'text'
+    if (mode === 'json') return 'json'
+    // auto
+    return leftJson.ok && rightJson.ok ? 'json' : 'text'
+  }, [mode, leftJson.ok, rightJson.ok])
 
   const result = useMemo(
     () => diffText(deferredLeft, deferredRight, { ignoreCase, ignoreWhitespace: ignoreWs }),
@@ -121,36 +142,81 @@ export default function DiffPage() {
             borderRadius: 'var(--radius-sm)',
           }}
         >
-          {/* 视图切换 */}
-          <div style={{ display: 'flex', gap: '6px' }}>
-            {(['split', 'unified'] as ViewMode[]).map((m) => (
+          {/* 模式切换：auto / text / json */}
+          <div style={{ display: 'flex', gap: '6px' }} data-testid="mode-toggle">
+            {(['auto', 'text', 'json'] as DiffMode[]).map((m) => (
               <button
                 key={m}
-                className={`theme-btn ${view === m ? 'theme-btn-primary' : ''}`}
+                className={`theme-btn ${mode === m ? 'theme-btn-primary' : ''}`}
                 style={{ padding: '6px 14px', fontSize: '13px' }}
-                onClick={() => setView(m)}
+                onClick={() => setMode(m)}
+                data-testid={`mode-${m}`}
+                title={
+                  m === 'auto'
+                    ? '自动：两侧合法 JSON 时走结构化'
+                    : m === 'text'
+                      ? '强制文本对比'
+                      : '强制 JSON 结构化对比'
+                }
               >
-                {m === 'split' ? '双栏对照' : '统一视图'}
+                {m === 'auto' ? '自动' : m === 'text' ? '文本' : 'JSON'}
               </button>
             ))}
           </div>
 
-          {/* 选项 */}
-          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
-            <input type="checkbox" checked={ignoreCase} onChange={(e) => setIgnoreCase(e.target.checked)} />
-            忽略大小写
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
-            <input type="checkbox" checked={ignoreWs} onChange={(e) => setIgnoreWs(e.target.checked)} />
-            忽略前后空白
-          </label>
+          {/* 视图切换（仅文本模式生效） */}
+          {effectiveMode === 'text' && (
+            <div style={{ display: 'flex', gap: '6px' }}>
+              {(['split', 'unified'] as ViewMode[]).map((m) => (
+                <button
+                  key={m}
+                  className={`theme-btn ${view === m ? 'theme-btn-primary' : ''}`}
+                  style={{ padding: '6px 14px', fontSize: '13px' }}
+                  onClick={() => setView(m)}
+                >
+                  {m === 'split' ? '双栏对照' : '统一视图'}
+                </button>
+              ))}
+            </div>
+          )}
 
-          {/* 统计 */}
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: '12px', fontSize: '13px', alignItems: 'center' }}>
-            <span style={{ color: DIFF_COLORS.add.accent, fontWeight: 600 }}>+ {result.stat.added}</span>
-            <span style={{ color: DIFF_COLORS.remove.accent, fontWeight: 600 }}>- {result.stat.removed}</span>
-            <span style={{ color: 'var(--text-muted)' }}>= {result.stat.unchanged}</span>
-          </div>
+          {/* 选项：文本模式与 JSON 模式分别显示 */}
+          {effectiveMode === 'text' ? (
+            <>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                <input type="checkbox" checked={ignoreCase} onChange={(e) => setIgnoreCase(e.target.checked)} />
+                忽略大小写
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                <input type="checkbox" checked={ignoreWs} onChange={(e) => setIgnoreWs(e.target.checked)} />
+                忽略前后空白
+              </label>
+            </>
+          ) : (
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={sortArrayKeys}
+                onChange={(e) => setSortArrayKeys(e.target.checked)}
+                data-testid="sort-array-keys"
+              />
+              数组顺序无关
+            </label>
+          )}
+
+          {/* 统计：仅文本模式显示行级 add/remove */}
+          {effectiveMode === 'text' && (
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: '12px', fontSize: '13px', alignItems: 'center' }}>
+              <span style={{ color: DIFF_COLORS.add.accent, fontWeight: 600 }}>+ {result.stat.added}</span>
+              <span style={{ color: DIFF_COLORS.remove.accent, fontWeight: 600 }}>- {result.stat.removed}</span>
+              <span style={{ color: 'var(--text-muted)' }}>= {result.stat.unchanged}</span>
+            </div>
+          )}
+          {effectiveMode === 'json' && (
+            <div style={{ marginLeft: 'auto', fontSize: '12px', color: 'var(--text-muted)' }}>
+              JSON 结构化对比
+            </div>
+          )}
 
           <button className="theme-btn" style={{ padding: '6px 12px', fontSize: '13px' }} onClick={handleSwap}>
             互换
@@ -262,6 +328,18 @@ export default function DiffPage() {
             <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>
               在两个文本框中输入内容以查看差异
             </div>
+          ) : effectiveMode === 'json' ? (
+            <JsonDiffViewSlot
+              leftRaw={deferredLeft}
+              rightRaw={deferredRight}
+              leftJsonOk={leftJson.ok}
+              rightJsonOk={rightJson.ok}
+              leftValue={leftJson.ok ? leftJson.value : undefined}
+              rightValue={rightJson.ok ? rightJson.value : undefined}
+              leftErr={!leftJson.ok ? leftJson.error : ''}
+              rightErr={!rightJson.ok ? rightJson.error : ''}
+              sortArrayKeys={sortArrayKeys}
+            />
           ) : view === 'split' ? (
             <SplitView
               lines={result.lines}
@@ -458,4 +536,36 @@ function formatPatch(lines: DiffLine[]): string {
       return ' ' + l.content
     })
     .join('\n')
+}
+
+/**
+ * JSON 模式槽位：处理「强制 JSON 但解析失败」的友好提示
+ * - auto 模式由上层智能判定，不会进入这里
+ * - 强制 JSON 时若任一侧解析失败，提示用户切换文本模式
+ */
+function JsonDiffViewSlot(props: {
+  leftRaw: string
+  rightRaw: string
+  leftJsonOk: boolean
+  rightJsonOk: boolean
+  leftValue: unknown
+  rightValue: unknown
+  leftErr: string
+  rightErr: string
+  sortArrayKeys: boolean
+}) {
+  const { leftJsonOk, rightJsonOk, leftValue, rightValue, leftErr, rightErr, sortArrayKeys } = props
+  if (!leftJsonOk || !rightJsonOk) {
+    return (
+      <div style={{ padding: '24px 16px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+        <div style={{ color: '#ef4444', marginBottom: '8px', fontWeight: 600 }}>JSON 解析失败</div>
+        {!leftJsonOk && <div>左侧：{leftErr || '非合法 JSON'}</div>}
+        {!rightJsonOk && <div>右侧：{rightErr || '非合法 JSON'}</div>}
+        <div style={{ marginTop: '12px', color: 'var(--text-muted)' }}>
+          请切换到「文本」或「自动」模式继续对比。
+        </div>
+      </div>
+    )
+  }
+  return <JsonDiffView left={leftValue} right={rightValue} sortArrayKeys={sortArrayKeys} />
 }

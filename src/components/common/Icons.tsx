@@ -279,3 +279,68 @@ export function IconQrCode({ className = 'w-5 h-5', style }: IconProps) {
     </svg>
   )
 }
+
+// === 批次 A-D 新增工具图标（lucide 风格 24×24 stroke）===
+
+export function IconCurl({ className = 'w-5 h-5', style }: IconProps) {
+  return (
+    <svg className={className} style={style} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 17l6-6-6-6M12 19h8" />
+    </svg>
+  )
+}
+
+export function IconColor({ className = 'w-5 h-5', style }: IconProps) {
+  return (
+    <svg className={className} style={style} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 110-18 9 9 0 016.364 2.636A6 6 0 0114 14h-1a2 2 0 00-2 2v1a3 3 0 01-3 3H6.5a4.5 4.5 0 01-3.5-1.5" />
+      <circle cx="7.5" cy="10.5" r="1" fill="currentColor" />
+      <circle cx="12" cy="7.5" r="1" fill="currentColor" />
+      <circle cx="16.5" cy="10.5" r="1" fill="currentColor" />
+    </svg>
+  )
+}
+
+export function IconDataConvert({ className = 'w-5 h-5', style }: IconProps) {
+  return (
+    <svg className={className} style={style} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h10M17 7l-3-3M17 7l-3 3M17 17H7M7 17l3 3M7 17l3-3" />
+    </svg>
+  )
+}
+
+export function IconIdGen({ className = 'w-5 h-5', style }: IconProps) {
+  return (
+    <svg className={className} style={style} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+      <rect x="3" y="6" width="18" height="12" rx="2" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M7 10v4M11 10v4M15 10v4M19 10v4" />
+    </svg>
+  )
+}
+
+export function IconImageCompress({ className = 'w-5 h-5', style }: IconProps) {
+  return (
+    <svg className={className} style={style} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 9l-3 3 3 3M15 9l3 3-3 3" />
+    </svg>
+  )
+}
+
+export function IconMarkdown({ className = 'w-5 h-5', style }: IconProps) {
+  return (
+    <svg className={className} style={style} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M7 15V9l3 3 3-3v6M17 9v6M17 15l-2-2M17 15l2-2" />
+    </svg>
+  )
+}
+
+export function IconCsv({ className = 'w-5 h-5', style }: IconProps) {
+  return (
+    <svg className={className} style={style} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 9h18M3 14h18M9 4v16M15 4v16" />
+    </svg>
+  )
+}

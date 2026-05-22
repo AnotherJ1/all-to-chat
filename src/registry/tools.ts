@@ -1,6 +1,10 @@
 import { lazy } from 'react'
 import type { ToolMeta } from '../types'
-import { IconChat, IconImage, IconJson, IconDatabase, IconBase64, IconClock, IconLink, IconCron, IconDiff, IconCollage, IconQrCode } from '../components/common/Icons'
+import {
+  IconChat, IconImage, IconJson, IconDatabase, IconBase64, IconClock, IconLink, IconCron, IconDiff, IconCollage, IconQrCode,
+  // 批次 A-D 新增
+  IconCurl, IconColor, IconDataConvert, IconIdGen, IconImageCompress, IconMarkdown, IconCsv,
+} from '../components/common/Icons'
 
 /**
  * 工具注册表 — 平台所有可用工具的声明式配置
@@ -95,5 +99,62 @@ export const toolRegistry: ToolMeta[] = [
     icon: IconQrCode,
     route: '/qr-code',
     component: lazy(() => import('../pages/QrCodePage')),
+  },
+  // === 批次 A-D 新增工具 ===
+  {
+    id: 'curl',
+    name: 'cURL 工具',
+    description: 'cURL ↔ fetch / axios / Python 等多语言互转',
+    icon: IconCurl,
+    route: '/curl',
+    component: lazy(() => import('../pages/CurlPage')),
+  },
+  {
+    id: 'color',
+    name: '颜色工具',
+    description: 'HEX/RGB/HSL/OKLCH 互转 + 调色板 + 对比度',
+    icon: IconColor,
+    route: '/color',
+    component: lazy(() => import('../pages/ColorPage')),
+  },
+  {
+    id: 'data-convert',
+    name: '数据格式互转',
+    description: 'JSON / YAML / TOML / XML / env / properties 任意互转',
+    icon: IconDataConvert,
+    route: '/data-convert',
+    component: lazy(() => import('../pages/DataConvertPage')),
+  },
+  {
+    id: 'id-gen',
+    name: 'ID 生成器',
+    description: 'UUID / NanoID / Snowflake / ULID 生成与反解析',
+    icon: IconIdGen,
+    route: '/id-gen',
+    component: lazy(() => import('../pages/IdGenPage')),
+  },
+  {
+    id: 'image-compress',
+    name: '图片压缩',
+    description: 'PNG/JPEG/WebP 互转压缩，单图实时 + 批量 ZIP',
+    icon: IconImageCompress,
+    route: '/image-compress',
+    component: lazy(() => import('../pages/ImageCompressPage')),
+  },
+  {
+    id: 'markdown',
+    name: 'Markdown 工具',
+    description: '双向 MD ↔ HTML 转换 + PDF / HTML 导出',
+    icon: IconMarkdown,
+    route: '/markdown',
+    component: lazy(() => import('../pages/MarkdownPage')),
+  },
+  {
+    id: 'csv',
+    name: 'CSV ↔ JSON',
+    description: 'CSV 与 JSON 互转，自动检测分隔符与表头',
+    icon: IconCsv,
+    route: '/csv',
+    component: lazy(() => import('../pages/CsvPage')),
   },
 ]
