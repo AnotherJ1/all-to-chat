@@ -16,6 +16,44 @@
 | Cron 可视化 | `/cron` | 解析 Cron 表达式，预览未来执行时间 |
 | 文本对比 | `/diff` | 行级 diff，双栏 / 统一视图，差异块导航跳转 |
 
+## 运行截图
+
+| 首页 | AI 聊天 |
+|:---:|:---:|
+| ![首页](public/screenshots/home.png) | ![AI 聊天](public/screenshots/chat.png) |
+
+| JSON 格式化 | MyBatis 日志转 SQL |
+|:---:|:---:|
+| ![JSON 格式化](public/screenshots/json.png) | ![MyBatis 日志转 SQL](public/screenshots/mybatis.png) |
+
+| Base64 图片互转 | 时间戳转换 |
+|:---:|:---:|
+| ![Base64 图片互转](public/screenshots/base64-image.png) | ![时间戳转换](public/screenshots/timestamp.png) |
+
+| URL 工具 | Cron 可视化 |
+|:---:|:---:|
+| ![URL 工具](public/screenshots/url.png) | ![Cron 可视化](public/screenshots/cron.png) |
+
+| 文本对比 | 自由拼图 |
+|:---:|:---:|
+| ![文本对比](public/screenshots/diff.png) | ![自由拼图](public/screenshots/collage.png) |
+
+| 二维码工具 | cURL 工具 |
+|:---:|:---:|
+| ![二维码工具](public/screenshots/qr-code.png) | ![cURL 工具](public/screenshots/curl.png) |
+
+| 颜色工具 | 数据格式互转 |
+|:---:|:---:|
+| ![颜色工具](public/screenshots/color.png) | ![数据格式互转](public/screenshots/data-convert.png) |
+
+| ID 生成器 | 图片压缩 |
+|:---:|:---:|
+| ![ID 生成器](public/screenshots/id-gen.png) | ![图片压缩](public/screenshots/image-compress.png) |
+
+| Markdown 工具 | CSV ↔ JSON |
+|:---:|:---:|
+| ![Markdown 工具](public/screenshots/markdown.png) | ![CSV ↔ JSON](public/screenshots/csv.png) |
+
 ## 技术栈
 
 - **React 18** + TypeScript
