@@ -126,7 +126,7 @@ export default function CurlPage() {
             style={{
               minHeight: '260px',
               resize: 'vertical',
-              fontFamily: "'JetBrains Mono', monospace",
+              fontFamily: 'var(--font-mono)',
               fontSize: '13px',
               lineHeight: 1.6,
             }}
@@ -137,10 +137,10 @@ export default function CurlPage() {
               role="alert"
               style={{
                 padding: '10px 12px',
-                background: 'rgba(239,68,68,0.1)',
-                border: '1px solid rgba(239,68,68,0.3)',
+                background: 'color-mix(in srgb, var(--color-danger) 12%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--color-danger) 35%, transparent)',
                 borderRadius: 'var(--radius-sm)',
-                color: '#ef4444',
+                color: 'var(--color-danger)',
                 fontSize: '13px',
               }}
             >
@@ -196,7 +196,7 @@ export default function CurlPage() {
               background: 'var(--bg-secondary)',
               border: 'var(--border-width) solid var(--border-color)',
               borderRadius: 'var(--radius-sm)',
-              fontFamily: "'JetBrains Mono', monospace",
+              fontFamily: 'var(--font-mono)',
               fontSize: '12.5px',
               lineHeight: 1.6,
               color: 'var(--text-primary)',

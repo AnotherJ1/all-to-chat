@@ -341,9 +341,9 @@ export function CameraScanner({
             <div
               className="text-xs px-3 py-2 rounded"
               style={{
-                background: 'rgba(239,68,68,0.08)',
-                color: '#ef4444',
-                border: '1px solid rgba(239,68,68,0.2)',
+                background: 'color-mix(in srgb, var(--color-danger) 10%, transparent)',
+                color: 'var(--color-danger)',
+                border: '1px solid color-mix(in srgb, var(--color-danger) 25%, transparent)',
               }}
             >
               当前浏览器或环境不支持摄像头扫码（需 HTTPS + 现代浏览器）
@@ -435,8 +435,8 @@ export function CameraScanner({
                 style={{
                   padding: '6px 14px',
                   fontSize: '12px',
-                  borderColor: '#ef4444',
-                  color: '#ef4444',
+                  borderColor: 'var(--color-danger)',
+                  color: 'var(--color-danger)',
                 }}
               >
                 停止扫描
@@ -466,9 +466,9 @@ export function CameraScanner({
               className="text-xs px-3 py-2 rounded"
               data-testid="camera-scanner-error"
               style={{
-                background: 'rgba(239,68,68,0.08)',
-                color: '#ef4444',
-                border: '1px solid rgba(239,68,68,0.2)',
+                background: 'color-mix(in srgb, var(--color-danger) 10%, transparent)',
+                color: 'var(--color-danger)',
+                border: '1px solid color-mix(in srgb, var(--color-danger) 25%, transparent)',
               }}
             >
               ⚠ {errorMsg}

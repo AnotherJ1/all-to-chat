@@ -175,7 +175,7 @@ function FormatRow({
         }}
         onBlur={() => setEditing(false)}
         spellCheck={false}
-        style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '13px', padding: '8px 12px' }}
+        style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', padding: '8px 12px' }}
       />
       <button
         className="theme-btn"
@@ -221,7 +221,7 @@ function SwatchRow({
           cursor: 'pointer',
         }}
       />
-      <code style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '13px' }}>{hex}</code>
+      <code style={{ fontFamily: 'var(--font-mono)', fontSize: '13px' }}>{hex}</code>
     </label>
   )
 }

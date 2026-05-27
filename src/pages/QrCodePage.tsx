@@ -218,7 +218,7 @@ export default function QrCodePage() {
                       value={fgInput}
                       onChange={(e) => setFgInput(e.target.value)}
                       onBlur={commitFgColor}
-                      style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '13px', padding: '6px 12px' }}
+                      style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', padding: '6px 12px' }}
                       aria-label="前景色 Hex"
                     />
                   </div>
@@ -248,7 +248,7 @@ export default function QrCodePage() {
                       value={bgInput}
                       onChange={(e) => setBgInput(e.target.value)}
                       onBlur={commitBgColor}
-                      style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '13px', padding: '6px 12px' }}
+                      style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', padding: '6px 12px' }}
                       aria-label="背景色 Hex"
                     />
                   </div>
@@ -306,9 +306,9 @@ export default function QrCodePage() {
                   role="alert"
                   className="p-3 rounded-lg text-sm flex items-center gap-2"
                   style={{
-                    background: 'rgba(245,158,11,0.1)',
-                    border: '1px solid rgba(245,158,11,0.3)',
-                    color: '#d97706',
+                    background: 'color-mix(in srgb, var(--color-warning) 12%, transparent)',
+                    border: '1px solid color-mix(in srgb, var(--color-warning) 35%, transparent)',
+                    color: 'var(--color-warning)',
                   }}
                 >
                   <span>⚠</span>
@@ -350,7 +350,7 @@ export default function QrCodePage() {
                       <button
                         className="theme-btn"
                         onClick={clearLogo}
-                        style={{ padding: '4px 10px', fontSize: '12px', borderColor: '#ef4444', color: '#ef4444' }}
+                        style={{ padding: '4px 10px', fontSize: '12px', borderColor: 'var(--color-danger)', color: 'var(--color-danger)' }}
                       >
                         移除
                       </button>
@@ -368,12 +368,14 @@ export default function QrCodePage() {
                 }}
               >
                 <div
-                  className="p-3 bg-white rounded-lg shadow-inner"
+                  className="p-3"
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     background: bgColor,
+                    borderRadius: 'var(--radius-sm)',
+                    boxShadow: 'var(--shadow-inset)',
                   }}
                 >
                   <canvas ref={canvasRef} style={{ maxWidth: '100%', height: 'auto' }} />
@@ -436,7 +438,7 @@ export default function QrCodePage() {
                 className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors"
                 style={{
                   borderColor: isDragging ? 'var(--accent-1)' : 'var(--border-color)',
-                  background: isDragging ? 'rgba(99,102,241,0.08)' : 'var(--bg-secondary)',
+                  background: isDragging ? 'color-mix(in srgb, var(--accent-1) 10%, transparent)' : 'var(--bg-secondary)',
                   borderRadius: 'var(--radius)',
                   outline: 'none',
                 }}
@@ -458,9 +460,9 @@ export default function QrCodePage() {
                 <p
                   className="text-xs mt-3 px-3 py-1 rounded inline-block"
                   style={{
-                    background: 'rgba(99,102,241,0.1)',
+                    background: 'color-mix(in srgb, var(--accent-1) 12%, transparent)',
                     color: 'var(--accent-1)',
-                    border: '1px solid rgba(99,102,241,0.2)',
+                    border: '1px solid color-mix(in srgb, var(--accent-1) 25%, transparent)',
                   }}
                 >
                   提示：支持在当前页面直接 Ctrl + V 粘贴二维码截图解析
@@ -494,7 +496,7 @@ export default function QrCodePage() {
                   }}
                 >
                   <div className="flex justify-between items-center">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-green-500">
+                    <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-success)' }}>
                       ✓ 解析成功
                     </span>
                     <div className="flex gap-2">
@@ -538,9 +540,9 @@ export default function QrCodePage() {
                 <div
                   className="p-4 rounded-lg flex items-center gap-2 text-sm font-medium"
                   style={{
-                    background: 'rgba(239,68,68,0.1)',
-                    border: '1px solid rgba(239,68,68,0.2)',
-                    color: '#ef4444',
+                    background: 'color-mix(in srgb, var(--color-danger) 12%, transparent)',
+                    border: '1px solid color-mix(in srgb, var(--color-danger) 25%, transparent)',
+                    color: 'var(--color-danger)',
                   }}
                   role="alert"
                 >

@@ -78,7 +78,7 @@ export default function CronPage() {
             value={expression}
             onChange={(e) => setExpression(e.target.value)}
             placeholder="例如：0 9 * * 1-5（工作日 9 点）"
-            style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '15px' }}
+            style={{ fontFamily: 'var(--font-mono)', fontSize: '15px' }}
           />
 
           {/* 字段拆解 */}
@@ -99,7 +99,7 @@ export default function CronPage() {
                   <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     {fieldLabels[i]}
                   </div>
-                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '15px', marginTop: '2px' }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '15px', marginTop: '2px' }}>
                     {p}
                   </div>
                 </div>
@@ -128,8 +128,8 @@ export default function CronPage() {
                 style={{
                   padding: '2px 8px',
                   fontSize: '11px',
-                  background: 'rgba(34,197,94,0.15)',
-                  color: '#22c55e',
+                  background: 'color-mix(in srgb, var(--color-success) 18%, transparent)',
+                  color: 'var(--color-success)',
                   borderRadius: '4px',
                   fontWeight: 600,
                 }}
@@ -164,10 +164,10 @@ export default function CronPage() {
           <section
             style={{
               padding: '14px 18px',
-              background: 'rgba(239,68,68,0.1)',
-              border: '1px solid rgba(239,68,68,0.3)',
+              background: 'color-mix(in srgb, var(--color-danger) 12%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--color-danger) 35%, transparent)',
               borderRadius: 'var(--radius-sm)',
-              color: '#ef4444',
+              color: 'var(--color-danger)',
               fontSize: '14px',
             }}
           >
@@ -212,7 +212,7 @@ export default function CronPage() {
                       alignItems: 'center',
                       gap: '12px',
                       padding: '8px 12px',
-                      background: i === 0 ? 'rgba(99,102,241,0.08)' : 'var(--bg-secondary)',
+                      background: i === 0 ? 'color-mix(in srgb, var(--accent-1) 10%, transparent)' : 'var(--bg-secondary)',
                       borderRadius: 'var(--radius-sm)',
                       border: 'var(--border-width) solid var(--border-color)',
                     }}
@@ -220,7 +220,7 @@ export default function CronPage() {
                     <span style={{ color: 'var(--text-muted)', fontSize: '12px', minWidth: '24px' }}>
                       #{i + 1}
                     </span>
-                    <code style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '14px', flex: 1 }}>
+                    <code style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', flex: 1 }}>
                       {formatDate(d)}
                     </code>
                     <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
@@ -246,7 +246,7 @@ export default function CronPage() {
               >
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px', width: '100%' }}>
                   <span style={{ fontSize: '13px', fontWeight: 600 }}>{preset.label}</span>
-                  <code style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: "'JetBrains Mono', monospace" }}>
+                  <code style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
                     {preset.expression}
                   </code>
                 </div>

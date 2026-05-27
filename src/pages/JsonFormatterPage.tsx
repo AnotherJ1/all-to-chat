@@ -271,7 +271,7 @@ export default function JsonFormatterPage() {
       </header>
 
       {error && (
-        <div className="mx-4 mb-4 p-3 text-sm" style={{ maxWidth: '1400px', margin: '0 auto 16px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 'var(--radius-sm)', color: '#ef4444' }}>
+        <div className="mx-4 mb-4 p-3 text-sm" style={{ maxWidth: '1400px', margin: '0 auto 16px', background: 'color-mix(in srgb, var(--color-danger) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--color-danger) 35%, transparent)', borderRadius: 'var(--radius-sm)', color: 'var(--color-danger)' }}>
           <strong>错误：</strong>{error}
         </div>
       )}
@@ -287,7 +287,7 @@ export default function JsonFormatterPage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="粘贴 JSON 数据..."
-            style={{ height: `${editorHeight}px`, minHeight: '200px', maxHeight: '800px', resize: 'vertical', fontFamily: "'JetBrains Mono', monospace", fontSize: '13px', lineHeight: '1.6' }}
+            style={{ height: `${editorHeight}px`, minHeight: '200px', maxHeight: '800px', resize: 'vertical', fontFamily: 'var(--font-mono)', fontSize: '13px', lineHeight: '1.6' }}
             spellCheck={false}
           />
         </div>
@@ -332,7 +332,7 @@ export default function JsonFormatterPage() {
               background: 'var(--bg-secondary)',
               border: 'var(--border-width) solid var(--border-color)',
               borderRadius: 'var(--radius-sm)',
-              fontFamily: "'JetBrains Mono', monospace",
+              fontFamily: 'var(--font-mono)',
               fontSize: `${fontSize}px`,
               lineHeight: '1.6',
               color: 'var(--text-primary)',
@@ -370,7 +370,7 @@ export default function JsonFormatterPage() {
               records.map((record) => (
                 <div key={record.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: 'var(--bg-surface)', border: 'var(--border-width) solid var(--border-color)', borderRadius: 'var(--radius-sm)' }}>
                   <span className="text-xs" style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{new Date(record.timestamp).toLocaleString()}</span>
-                  <span className="text-sm" style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-secondary)', fontFamily: "'JetBrains Mono', monospace", fontSize: '12px' }}>{record.input.slice(0, 80)}</span>
+                  <span className="text-sm" style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: '12px' }}>{record.input.slice(0, 80)}</span>
                   <button className="theme-btn" style={{ padding: '4px 10px', fontSize: '12px' }} onClick={() => handleLoadRecord(record)}>加载</button>
                   <button className="theme-btn" style={{ padding: '4px 10px', fontSize: '12px' }} onClick={() => removeRecord(record.id)}>删除</button>
                 </div>

@@ -148,7 +148,7 @@ export default function IdGenPage() {
                     padding: '6px 14px',
                     borderRadius: 'var(--radius-sm)',
                     border: 'var(--border-width) solid var(--border-color)',
-                    background: active ? 'var(--accent-color, rgba(99,102,241,0.15))' : 'var(--bg-secondary)',
+                    background: active ? 'color-mix(in srgb, var(--accent-1) 18%, transparent)' : 'var(--bg-secondary)',
                     color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
                     fontWeight: active ? 600 : 400,
                     fontSize: '13px',
@@ -191,7 +191,7 @@ export default function IdGenPage() {
                   const n = Number(e.target.value)
                   if (Number.isFinite(n)) setCount(Math.max(1, Math.min(10000, Math.floor(n))))
                 }}
-                style={{ width: '140px', fontFamily: "'JetBrains Mono', monospace" }}
+                style={{ width: '140px', fontFamily: 'var(--font-mono)' }}
               />
             </label>
             <button className="theme-btn" type="button" onClick={handleGenerate} style={{ minWidth: '120px' }}>
@@ -249,10 +249,10 @@ export default function IdGenPage() {
                     fontSize: '13px',
                   }}
                 >
-                  <span style={{ color: 'var(--text-muted)', minWidth: '40px', fontFamily: "'JetBrains Mono', monospace" }}>
+                  <span style={{ color: 'var(--text-muted)', minWidth: '40px', fontFamily: 'var(--font-mono)' }}>
                     #{i + 1}
                   </span>
-                  <code style={{ flex: 1, fontFamily: "'JetBrains Mono', monospace", wordBreak: 'break-all' }}>{r}</code>
+                  <code style={{ flex: 1, fontFamily: 'var(--font-mono)', wordBreak: 'break-all' }}>{r}</code>
                   <button
                     type="button"
                     onClick={() => handleCopyOne(r)}

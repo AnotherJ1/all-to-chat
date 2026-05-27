@@ -320,7 +320,7 @@ export function BatchPanel() {
               className="border-2 border-dashed rounded p-4 text-center cursor-pointer transition-colors"
               style={{
                 borderColor: isDragOver ? 'var(--accent-1)' : 'var(--border-color)',
-                background: isDragOver ? 'rgba(99,102,241,0.08)' : 'var(--bg-surface)',
+                background: isDragOver ? 'color-mix(in srgb, var(--accent-1) 10%, transparent)' : 'var(--bg-surface)',
                 color: 'var(--text-secondary)',
                 fontSize: '13px',
                 outline: 'none',
@@ -355,8 +355,8 @@ export function BatchPanel() {
                     style={{
                       padding: '4px 10px',
                       fontSize: '12px',
-                      borderColor: '#ef4444',
-                      color: '#ef4444',
+                      borderColor: 'var(--color-danger)',
+                      color: 'var(--color-danger)',
                     }}
                   >
                     清空结果
@@ -404,7 +404,7 @@ export function BatchPanel() {
                           <td className="px-2 py-1">
                             <span
                               style={{
-                                color: r.status === '成功' ? '#10b981' : '#ef4444',
+                                color: r.status === '成功' ? 'var(--color-success)' : 'var(--color-danger)',
                                 fontWeight: 600,
                               }}
                             >

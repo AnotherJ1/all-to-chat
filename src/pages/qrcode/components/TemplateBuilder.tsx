@@ -190,7 +190,7 @@ export function TemplateBuilder() {
                 fontSize: '12px',
                 fontWeight: active ? 600 : 400,
                 background: active ? 'var(--accent-1)' : 'transparent',
-                color: active ? '#fff' : 'var(--text-secondary)',
+                color: active ? 'var(--bg-primary)' : 'var(--text-secondary)',
                 borderColor: active ? 'var(--accent-1)' : 'var(--border-color)',
               }}
             >
@@ -205,8 +205,8 @@ export function TemplateBuilder() {
           style={{
             padding: '4px 10px',
             fontSize: '12px',
-            color: '#ef4444',
-            borderColor: 'rgba(239,68,68,0.3)',
+            color: 'var(--color-danger)',
+            borderColor: 'color-mix(in srgb, var(--color-danger) 35%, transparent)',
           }}
           aria-label="清空当前表单"
         >
@@ -305,7 +305,7 @@ export function TemplateBuilder() {
                     setWifiForm({ ...wifiForm, password: e.target.value })
                     markTouched()
                   }}
-                  style={{ fontSize: '13px', fontFamily: "'JetBrains Mono', monospace" }}
+                  style={{ fontSize: '13px', fontFamily: 'var(--font-mono)' }}
                 />
                 <button
                   type="button"

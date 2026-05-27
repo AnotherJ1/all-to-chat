@@ -100,8 +100,8 @@ export function ThemeHintBar() {
       role="note"
       className="text-xs px-3 py-2 rounded mt-3 flex items-center gap-2"
       style={{
-        background: 'rgba(99,102,241,0.08)',
-        border: '1px solid rgba(99,102,241,0.25)',
+        background: 'color-mix(in srgb, var(--accent-1) 10%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--accent-1) 30%, transparent)',
         color: 'var(--text-secondary)',
       }}
     >

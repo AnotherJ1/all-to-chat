@@ -318,7 +318,7 @@ export default function CsvPage() {
                   width: '100%',
                   minHeight: '320px',
                   padding: '10px 12px',
-                  fontFamily: "'JetBrains Mono', monospace",
+                  fontFamily: 'var(--font-mono)',
                   fontSize: '13px',
                   lineHeight: 1.5,
                   resize: 'vertical',
@@ -330,10 +330,10 @@ export default function CsvPage() {
                 style={{
                   marginTop: '8px',
                   padding: '8px 12px',
-                  background: 'color-mix(in srgb, #ef4444 12%, transparent)',
-                  border: '1px solid color-mix(in srgb, #ef4444 40%, transparent)',
+                  background: 'color-mix(in srgb, var(--color-danger) 12%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--color-danger) 40%, transparent)',
                   borderRadius: 'var(--radius-sm)',
-                  color: '#ef4444',
+                  color: 'var(--color-danger)',
                   fontSize: '12.5px',
                 }}
               >
@@ -379,7 +379,7 @@ export default function CsvPage() {
                 width: '100%',
                 minHeight: '180px',
                 padding: '10px 12px',
-                fontFamily: "'JetBrains Mono', monospace",
+                fontFamily: 'var(--font-mono)',
                 fontSize: '13px',
                 lineHeight: 1.5,
                 resize: 'vertical',

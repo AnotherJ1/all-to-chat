@@ -26,7 +26,7 @@ export function QrMetadataView(): JSX.Element {
   // 进度条最大显示 100%（溢出部分用红色满条）
   const barPercent = Math.min(100, info.percentUsed)
 
-  const barColor = overflow ? '#ef4444' : warn ? '#f59e0b' : 'var(--accent-1)'
+  const barColor = overflow ? 'var(--color-danger)' : warn ? 'var(--color-warning)' : 'var(--accent-1)'
 
   return (
     <div
@@ -85,12 +85,12 @@ export function QrMetadataView(): JSX.Element {
       </div>
 
       {warn && (
-        <div role="alert" style={{ color: '#d97706' }}>
+        <div role="alert" style={{ color: 'var(--color-warning)' }}>
           ⚠ 接近容量上限，可能需要提高 QR 版本
         </div>
       )}
       {overflow && (
-        <div role="alert" style={{ color: '#ef4444' }}>
+        <div role="alert" style={{ color: 'var(--color-danger)' }}>
           ✗ 超出容量，请提高容错等级或减少内容
         </div>
       )}

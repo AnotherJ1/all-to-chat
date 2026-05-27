@@ -30,7 +30,7 @@ const labelStyle: React.CSSProperties = {
 
 const valueStyle: React.CSSProperties = {
   color: 'var(--text-primary)',
-  fontFamily: "'JetBrains Mono', monospace",
+  fontFamily: 'var(--font-mono)',
   wordBreak: 'break-all',
 }
 
@@ -53,9 +53,9 @@ function Tag({ children }: { children: React.ReactNode }) {
     <span
       className="text-xs px-2 py-0.5 rounded inline-block"
       style={{
-        background: 'rgba(99,102,241,0.12)',
+        background: 'color-mix(in srgb, var(--accent-1) 15%, transparent)',
         color: 'var(--accent-1)',
-        border: '1px solid rgba(99,102,241,0.25)',
+        border: '1px solid color-mix(in srgb, var(--accent-1) 30%, transparent)',
         fontFamily: 'var(--font-heading)',
         letterSpacing: '0.04em',
       }}

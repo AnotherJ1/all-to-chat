@@ -591,7 +591,7 @@ export default function Base64ImagePage() {
                           </span>
                         )}
                         {isOutputTruncated && (
-                          <span style={{ marginLeft: '8px', fontSize: '11px', color: 'var(--accent-2, #f59e0b)' }}>
+                          <span style={{ marginLeft: '8px', fontSize: '11px', color: 'var(--color-warning)' }}>
                             · 已截断显示
                           </span>
                         )}
@@ -635,7 +635,7 @@ export default function Base64ImagePage() {
                         flex: 1,
                         minHeight: 0,
                         boxSizing: 'border-box',
-                        fontFamily: "'JetBrains Mono', monospace",
+                        fontFamily: 'var(--font-mono)',
                         fontSize: '12px',
                         lineHeight: 1.5,
                         resize: 'none',
@@ -686,7 +686,7 @@ export default function Base64ImagePage() {
                 style={{
                   width: '100%',
                   minHeight: '180px',
-                  fontFamily: "'JetBrains Mono', monospace",
+                  fontFamily: 'var(--font-mono)',
                   fontSize: '12px',
                   lineHeight: 1.5,
                   resize: 'vertical',
@@ -703,10 +703,10 @@ export default function Base64ImagePage() {
               <div
                 style={{
                   padding: '12px 14px',
-                  background: 'rgba(239, 68, 68, 0.1)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  background: 'color-mix(in srgb, var(--color-danger) 12%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--color-danger) 35%, transparent)',
                   borderRadius: 'var(--radius-sm)',
-                  color: '#ef4444',
+                  color: 'var(--color-danger)',
                   fontSize: '13px',
                 }}
               >
@@ -792,7 +792,7 @@ const kbdStyle: React.CSSProperties = {
   background: 'var(--bg-surface)',
   border: '1px solid var(--border-color)',
   borderRadius: '4px',
-  fontFamily: "'JetBrains Mono', monospace",
+  fontFamily: 'var(--font-mono)',
   fontSize: '11px',
   color: 'var(--text-secondary)',
 }
@@ -807,7 +807,7 @@ function Meta({ label, value }: { label: string; value: string }) {
         style={{
           fontSize: '13px',
           color: 'var(--text-primary)',
-          fontFamily: "'JetBrains Mono', monospace",
+          fontFamily: 'var(--font-mono)',
           marginTop: '2px',
           wordBreak: 'break-all',
         }}
@@ -1076,7 +1076,7 @@ const CodeExamples = memo(function CodeExamplesInner({ truncatedBase64, mime, ha
           background: 'var(--bg-surface)',
           border: 'var(--border-width) solid var(--border-color)',
           borderRadius: 'var(--radius-sm)',
-          fontFamily: "'JetBrains Mono', monospace",
+          fontFamily: 'var(--font-mono)',
           fontSize: '12.5px',
           lineHeight: 1.65,
           color: 'var(--text-primary)',

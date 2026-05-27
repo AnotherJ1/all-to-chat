@@ -145,7 +145,7 @@ export default function MybatisLogPage() {
             style={{
               minHeight: '160px',
               resize: 'vertical',
-              fontFamily: "'JetBrains Mono', monospace",
+              fontFamily: 'var(--font-mono)',
               fontSize: '13px',
               lineHeight: '1.6',
             }}
@@ -181,7 +181,7 @@ export default function MybatisLogPage() {
                   <pre
                     style={{
                       margin: 0,
-                      fontFamily: "'JetBrains Mono', monospace",
+                      fontFamily: 'var(--font-mono)',
                       fontSize: '13px',
                       lineHeight: '1.6',
                       whiteSpace: 'pre-wrap',
@@ -277,7 +277,7 @@ export default function MybatisLogPage() {
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
                         flex: 1,
-                        fontFamily: "'JetBrains Mono', monospace",
+                        fontFamily: 'var(--font-mono)',
                       }}
                     >
                       {record.parsedSqls[0] || '(空)'}

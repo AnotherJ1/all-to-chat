@@ -16,8 +16,8 @@ import { toast } from '../stores/toastStore'
 type ViewMode = 'split' | 'unified'
 
 const DIFF_COLORS = {
-  add: { bg: 'rgba(34,197,94,0.12)', accent: '#22c55e' },
-  remove: { bg: 'rgba(239,68,68,0.12)', accent: '#ef4444' },
+  add: { bg: 'color-mix(in srgb, var(--color-success) 15%, transparent)', accent: 'var(--color-success)' },
+  remove: { bg: 'color-mix(in srgb, var(--color-danger) 12%, transparent)', accent: 'var(--color-danger)' },
 }
 
 export default function DiffPage() {
@@ -242,7 +242,7 @@ export default function DiffPage() {
               value={left}
               onChange={(e) => setLeft(e.target.value)}
               placeholder="粘贴原始文本..."
-              style={{ minHeight: '180px', fontFamily: "'JetBrains Mono', monospace", fontSize: '13px', resize: 'vertical' }}
+              style={{ minHeight: '180px', fontFamily: 'var(--font-mono)', fontSize: '13px', resize: 'vertical' }}
               spellCheck={false}
             />
           </div>
@@ -256,7 +256,7 @@ export default function DiffPage() {
               value={right}
               onChange={(e) => setRight(e.target.value)}
               placeholder="粘贴待对比文本..."
-              style={{ minHeight: '180px', fontFamily: "'JetBrains Mono', monospace", fontSize: '13px', resize: 'vertical' }}
+              style={{ minHeight: '180px', fontFamily: 'var(--font-mono)', fontSize: '13px', resize: 'vertical' }}
               spellCheck={false}
             />
           </div>
@@ -398,7 +398,7 @@ function SplitView({
 
   return (
     <div ref={scrollerRef} style={{ overflow: 'auto', maxHeight: '700px' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: "'JetBrains Mono', monospace", fontSize: '13px', tableLayout: 'fixed' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--font-mono)', fontSize: '13px', tableLayout: 'fixed' }}>
         <colgroup>
           <col style={{ width: '50px' }} />
           <col style={{ width: 'calc(50% - 50px)' }} />
@@ -454,7 +454,7 @@ function UnifiedView({
 
   return (
     <div ref={scrollerRef} style={{ overflow: 'auto', maxHeight: '700px' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: "'JetBrains Mono', monospace", fontSize: '13px', tableLayout: 'fixed' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--font-mono)', fontSize: '13px', tableLayout: 'fixed' }}>
         <colgroup>
           <col style={{ width: '60px' }} />
           <col style={{ width: '60px' }} />
@@ -558,7 +558,7 @@ function JsonDiffViewSlot(props: {
   if (!leftJsonOk || !rightJsonOk) {
     return (
       <div style={{ padding: '24px 16px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-        <div style={{ color: '#ef4444', marginBottom: '8px', fontWeight: 600 }}>JSON 解析失败</div>
+        <div style={{ color: 'var(--color-danger)', marginBottom: '8px', fontWeight: 600 }}>JSON 解析失败</div>
         {!leftJsonOk && <div>左侧：{leftErr || '非合法 JSON'}</div>}
         {!rightJsonOk && <div>右侧：{rightErr || '非合法 JSON'}</div>}
         <div style={{ marginTop: '12px', color: 'var(--text-muted)' }}>

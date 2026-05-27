@@ -199,12 +199,12 @@ export default function DataConvertPage() {
             style={{
               marginTop: '10px',
               padding: '10px 12px',
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.4)',
+              background: 'color-mix(in srgb, var(--color-danger) 12%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--color-danger) 40%, transparent)',
               borderRadius: 'var(--radius-sm)',
-              color: '#ef4444',
+              color: 'var(--color-danger)',
               fontSize: '13px',
-              fontFamily: "'JetBrains Mono', monospace",
+              fontFamily: 'var(--font-mono)',
               whiteSpace: 'pre-wrap',
               wordBreak: 'break-all',
             }}
@@ -220,10 +220,10 @@ export default function DataConvertPage() {
             style={{
               marginTop: '10px',
               padding: '10px 12px',
-              background: 'rgba(234, 179, 8, 0.1)',
-              border: '1px solid rgba(234, 179, 8, 0.4)',
+              background: 'color-mix(in srgb, var(--color-warning) 12%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--color-warning) 40%, transparent)',
               borderRadius: 'var(--radius-sm)',
-              color: '#eab308',
+              color: 'var(--color-warning)',
               fontSize: '13px',
             }}
           >
@@ -255,7 +255,7 @@ export default function DataConvertPage() {
             spellCheck={false}
             style={{
               minHeight: '420px',
-              fontFamily: "'JetBrains Mono', monospace",
+              fontFamily: 'var(--font-mono)',
               fontSize: '13px',
               lineHeight: '1.6',
               resize: 'vertical',
@@ -275,7 +275,7 @@ export default function DataConvertPage() {
               background: 'var(--bg-secondary)',
               border: 'var(--border-width) solid var(--border-color)',
               borderRadius: 'var(--radius-sm)',
-              fontFamily: "'JetBrains Mono', monospace",
+              fontFamily: 'var(--font-mono)',
               fontSize: '13px',
               lineHeight: '1.6',
               color: 'var(--text-primary)',

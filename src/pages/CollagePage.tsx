@@ -484,8 +484,8 @@ export default function CollagePage() {
                       style={{
                         position: 'absolute',
                         width: '12px', height: '12px',
-                        background: 'var(--accent-1, #6366f1)',
-                        border: '2px solid #fff',
+                        background: 'var(--accent-1)',
+                        border: '2px solid var(--bg-surface)',
                         borderRadius: '50%',
                         ...(c === 'nw' && { left: '-7px', top: '-7px', cursor: 'nwse-resize' }),
                         ...(c === 'ne' && { right: '-7px', top: '-7px', cursor: 'nesw-resize' }),
@@ -516,7 +516,7 @@ export default function CollagePage() {
               }}
             >
               <span style={{ color: 'var(--text-muted)' }}>已选中：</span>
-              <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+              <span style={{ fontFamily: 'var(--font-mono)' }}>
                 {sel.fileName || sel.id} · {Math.round(sel.width)} × {Math.round(sel.height)}
               </span>
               <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px' }}>
@@ -604,7 +604,7 @@ const kbd: React.CSSProperties = {
   background: 'var(--bg-surface)',
   border: '1px solid var(--border-color)',
   borderRadius: '3px',
-  fontFamily: "'JetBrains Mono', monospace",
+  fontFamily: 'var(--font-mono)',
   fontSize: '10px',
   color: 'var(--text-secondary)',
 }

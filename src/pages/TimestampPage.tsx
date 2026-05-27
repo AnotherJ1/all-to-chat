@@ -157,7 +157,7 @@ export default function TimestampPage() {
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '24px' }}>
             <div>
               <div className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>当前时间</div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '20px', marginTop: '4px' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '20px', marginTop: '4px' }}>
                 {formatInOffset(now, localOffsetHours)}
               </div>
             </div>
@@ -165,7 +165,7 @@ export default function TimestampPage() {
               <div className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>秒级时间戳</div>
               <button
                 className="theme-btn"
-                style={{ marginTop: '4px', fontFamily: "'JetBrains Mono', monospace" }}
+                style={{ marginTop: '4px', fontFamily: 'var(--font-mono)' }}
                 onClick={() => copy(Math.floor(now.getTime() / 1000).toString())}
               >
                 {Math.floor(now.getTime() / 1000)}
@@ -175,7 +175,7 @@ export default function TimestampPage() {
               <div className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>毫秒级时间戳</div>
               <button
                 className="theme-btn"
-                style={{ marginTop: '4px', fontFamily: "'JetBrains Mono', monospace" }}
+                style={{ marginTop: '4px', fontFamily: 'var(--font-mono)' }}
                 onClick={() => copy(now.getTime().toString())}
               >
                 {now.getTime()}
@@ -200,7 +200,7 @@ export default function TimestampPage() {
                 value={tsInput}
                 onChange={(e) => setTsInput(e.target.value)}
                 placeholder="例如 1700000000"
-                style={{ fontFamily: "'JetBrains Mono', monospace", flex: 1 }}
+                style={{ fontFamily: 'var(--font-mono)', flex: 1 }}
               />
               <select
                 className="theme-input"
@@ -214,7 +214,7 @@ export default function TimestampPage() {
               </select>
             </div>
             {timestampParse?.error && (
-              <div style={{ color: '#ef4444', fontSize: '13px' }}>{timestampParse.error}</div>
+              <div style={{ color: 'var(--color-danger)', fontSize: '13px' }}>{timestampParse.error}</div>
             )}
             {timestampParse?.date && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -245,10 +245,10 @@ export default function TimestampPage() {
               value={dateInput}
               onChange={(e) => setDateInput(e.target.value)}
               placeholder="2024-01-01 12:00:00"
-              style={{ fontFamily: "'JetBrains Mono', monospace", marginBottom: '12px' }}
+              style={{ fontFamily: 'var(--font-mono)', marginBottom: '12px' }}
             />
             {dateParse?.error && (
-              <div style={{ color: '#ef4444', fontSize: '13px' }}>{dateParse.error}</div>
+              <div style={{ color: 'var(--color-danger)', fontSize: '13px' }}>{dateParse.error}</div>
             )}
             {dateParse?.date && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -283,7 +283,7 @@ function Row({ label, value, onCopy }: { label: string; value: string; onCopy?: 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
       <span style={{ color: 'var(--text-muted)', fontSize: '12px', minWidth: '88px', flex: 'none' }}>{label}</span>
-      <code style={{ flex: 1, fontFamily: "'JetBrains Mono', monospace", fontSize: '13px', wordBreak: 'break-all' }}>
+      <code style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: '13px', wordBreak: 'break-all' }}>
         {value}
       </code>
       {onCopy && (

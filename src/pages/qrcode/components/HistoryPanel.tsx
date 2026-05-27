@@ -149,8 +149,8 @@ export function HistoryPanel() {
               style={{
                 padding: '4px 10px',
                 fontSize: '12px',
-                borderColor: confirmClear ? '#ef4444' : 'var(--border-color)',
-                color: confirmClear ? '#ef4444' : 'var(--text-secondary)',
+                borderColor: confirmClear ? 'var(--color-danger)' : 'var(--border-color)',
+                color: confirmClear ? 'var(--color-danger)' : 'var(--text-secondary)',
               }}
             >
               {confirmClear ? '再次点击确认' : '清空历史'}
@@ -214,8 +214,8 @@ export function HistoryPanel() {
                       style={{
                         padding: '4px 10px',
                         fontSize: '12px',
-                        borderColor: '#ef4444',
-                        color: '#ef4444',
+                        borderColor: 'var(--color-danger)',
+                        color: 'var(--color-danger)',
                       }}
                       aria-label="删除此条历史"
                     >

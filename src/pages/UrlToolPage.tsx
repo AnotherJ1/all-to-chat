@@ -166,7 +166,7 @@ export default function UrlToolPage() {
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder={mode === 'encode' ? '需要编码的文本...' : '需要解码的文本...'}
-              style={{ minHeight: '120px', fontFamily: "'JetBrains Mono', monospace", fontSize: '13px', resize: 'vertical' }}
+              style={{ minHeight: '120px', fontFamily: 'var(--font-mono)', fontSize: '13px', resize: 'vertical' }}
               spellCheck={false}
             />
 
@@ -197,11 +197,11 @@ export default function UrlToolPage() {
                 background: 'var(--bg-secondary)',
                 border: 'var(--border-width) solid var(--border-color)',
                 borderRadius: 'var(--radius-sm)',
-                fontFamily: "'JetBrains Mono', monospace",
+                fontFamily: 'var(--font-mono)',
                 fontSize: '13px',
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-all',
-                color: codecResult.startsWith('错误') ? '#ef4444' : 'var(--text-primary)',
+                color: codecResult.startsWith('错误') ? 'var(--color-danger)' : 'var(--text-primary)',
               }}
             >
               {codecResult || <span style={{ color: 'var(--text-muted)' }}>输出将显示在这里...</span>}
@@ -218,7 +218,7 @@ export default function UrlToolPage() {
               onChange={(e) => setUrlInput(e.target.value)}
               onBlur={handleParse}
               placeholder="https://example.com/path?foo=bar&baz=qux"
-              style={{ minHeight: '90px', fontFamily: "'JetBrains Mono', monospace", fontSize: '13px', resize: 'vertical' }}
+              style={{ minHeight: '90px', fontFamily: 'var(--font-mono)', fontSize: '13px', resize: 'vertical' }}
               spellCheck={false}
             />
             <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
@@ -241,7 +241,7 @@ export default function UrlToolPage() {
             </div>
 
             {parseError && (
-              <div style={{ marginTop: '12px', color: '#ef4444', fontSize: '13px' }}>{parseError}</div>
+              <div style={{ marginTop: '12px', color: 'var(--color-danger)', fontSize: '13px' }}>{parseError}</div>
             )}
 
             {parsed && (
@@ -293,7 +293,7 @@ export default function UrlToolPage() {
                               next[idx] = { ...next[idx], key: e.target.value }
                               updateQuery(next)
                             }}
-                            style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '13px', padding: '8px 12px' }}
+                            style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', padding: '8px 12px' }}
                           />
                           <input
                             className="theme-input"
@@ -304,7 +304,7 @@ export default function UrlToolPage() {
                               next[idx] = { ...next[idx], value: e.target.value }
                               updateQuery(next)
                             }}
-                            style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '13px', padding: '8px 12px' }}
+                            style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', padding: '8px 12px' }}
                           />
                           <button
                             className="theme-btn"
@@ -334,7 +334,7 @@ function UrlPart({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
       <span style={{ color: 'var(--text-muted)', fontSize: '12px', minWidth: '48px' }}>{label}</span>
-      <code style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '13px', wordBreak: 'break-all' }}>{value}</code>
+      <code style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', wordBreak: 'break-all' }}>{value}</code>
     </div>
   )
 }

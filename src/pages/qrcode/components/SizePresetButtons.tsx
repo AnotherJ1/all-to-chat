@@ -45,7 +45,7 @@ export function SizePresetButtons(): JSX.Element {
               // 当前尺寸高亮
               borderColor: active ? 'var(--accent-1)' : 'var(--border-color)',
               color: active ? 'var(--accent-1)' : 'var(--text-secondary)',
-              background: active ? 'rgba(99,102,241,0.08)' : 'transparent',
+              background: active ? 'color-mix(in srgb, var(--accent-1) 10%, transparent)' : 'transparent',
             }}
           >
             {preset}px
