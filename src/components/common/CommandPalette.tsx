@@ -54,20 +54,10 @@ export default function CommandPalette() {
       role="dialog"
       aria-label="命令面板"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-start justify-center pt-24"
+      className="theme-palette-backdrop"
       onClick={() => setOpen(false)}
-      style={{ background: 'rgba(0,0,0,0.4)' }}
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-xl rounded-xl overflow-hidden"
-        style={{
-          background: 'var(--bg-primary)',
-          border: '1px solid var(--border-color, rgba(127,127,127,0.25))',
-          color: 'var(--text-primary)',
-          fontFamily: 'var(--font-body)',
-        }}
-      >
+      <div onClick={(e) => e.stopPropagation()} className="theme-palette">
         <input
           ref={inputRef}
           type="text"
@@ -75,8 +65,7 @@ export default function CommandPalette() {
           onChange={(e) => setQuery(e.target.value)}
           placeholder="输入关键字搜索工具..."
           aria-label="命令面板搜索框"
-          className="w-full px-4 py-3 bg-transparent outline-none"
-          style={{ fontSize: '1rem', borderBottom: '1px solid var(--border-color, rgba(127,127,127,0.2))' }}
+          className="theme-palette-input"
           onKeyDown={(e) => {
             if (e.key === 'ArrowDown') {
               e.preventDefault()
@@ -94,14 +83,9 @@ export default function CommandPalette() {
           }}
         />
 
-        <ul role="listbox" className="max-h-80 overflow-auto">
+        <ul role="listbox" className="theme-palette-list">
           {results.length === 0 ? (
-            <li
-              className="px-4 py-6 text-center"
-              style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}
-            >
-              没有找到相关工具
-            </li>
+            <li className="theme-palette-empty">没有找到相关工具</li>
           ) : (
             results.map((tool, i) => (
               <li
@@ -110,14 +94,11 @@ export default function CommandPalette() {
                 aria-selected={i === selectedIndex}
                 onMouseEnter={() => setSelectedIndex(i)}
                 onClick={() => handleSelect(i)}
-                className="px-4 py-3 cursor-pointer flex items-center gap-3"
-                style={{
-                  background: i === selectedIndex ? 'var(--surface-elevated, rgba(127,127,127,0.12))' : 'transparent',
-                  opacity: tool.disabled ? 0.6 : 1,
-                }}
+                className="theme-palette-item"
+                style={{ opacity: tool.disabled ? 0.6 : 1 }}
               >
-                <span style={{ fontWeight: 600 }}>{tool.name}</span>
-                <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{tool.description}</span>
+                <span className="theme-palette-item-name">{tool.name}</span>
+                <span className="theme-palette-item-desc">{tool.description}</span>
               </li>
             ))
           )}

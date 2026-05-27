@@ -102,32 +102,10 @@ export default function HomePage() {
               role="tab"
               aria-selected={active}
               onClick={() => setActiveTab(tab.id)}
-              className="px-4 py-2 rounded-full transition-colors flex items-center gap-2"
-              style={{
-                background: active
-                  ? 'var(--accent, var(--text-primary))'
-                  : 'var(--surface-elevated, var(--bg-secondary))',
-                color: active
-                  ? 'var(--bg-primary, #fff)'
-                  : 'var(--text-primary)',
-                border: '1px solid var(--border-color, rgba(127,127,127,0.2))',
-                fontFamily: 'var(--font-body)',
-                fontSize: '0.9rem',
-                fontWeight: active ? 600 : 500,
-              }}
+              className="theme-tab"
             >
               <span>{tab.name}</span>
-              <span
-                style={{
-                  fontSize: '0.75rem',
-                  opacity: 0.75,
-                  padding: '0 0.4rem',
-                  borderRadius: '999px',
-                  background: active ? 'rgba(255,255,255,0.18)' : 'rgba(127,127,127,0.15)',
-                }}
-              >
-                {count}
-              </span>
+              <span className="theme-tab-count">{count}</span>
             </button>
           )
         })}
