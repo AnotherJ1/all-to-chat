@@ -1,5 +1,8 @@
 import { ComponentType, LazyExoticComponent, CSSProperties } from 'react'
 
+// 工具分类
+export type ToolCategory = 'ai' | 'text-data' | 'dev' | 'image' | 'encode'
+
 // 工具元数据类型
 export interface ToolMeta {
   /** 工具唯一标识符 */
@@ -16,6 +19,10 @@ export interface ToolMeta {
   component: LazyExoticComponent<ComponentType>
   /** 是否禁用（禁用时点击提示暂未开放） */
   disabled?: boolean
+  /** 分类归属 */
+  category: ToolCategory
+  /** 搜索别名/拼音/英文缩写 */
+  keywords?: string[]
 }
 
 // 协议类型
