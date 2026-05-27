@@ -6,6 +6,8 @@ import ErrorBoundary from './components/common/ErrorBoundary'
 import ToastContainer from './components/common/Toast'
 import ThemeSwitcher from './components/common/ThemeSwitcher'
 import { useThemeStore } from './stores/themeStore'
+import CommandPalette from './components/common/CommandPalette'
+import { useCommandPaletteStore } from './stores/commandPaletteStore'
 
 /** 加载中占位屏幕 */
 function LoadingScreen() {
@@ -25,11 +27,28 @@ function ThemeSync() {
   return null
 }
 
+/** 全局快捷键监听：⌘K / Ctrl+K 切换命令面板 */
+function CommandPaletteHotkey() {
+  const toggle = useCommandPaletteStore((s) => s.toggle)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault()
+        toggle()
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [toggle])
+  return null
+}
+
 export default function App() {
   return (
     <ErrorBoundary>
       <ThemeSync />
       <BrowserRouter>
+        <CommandPaletteHotkey />
         <Suspense fallback={<LoadingScreen />}>
           <Routes>
             <Route path="/" element={<HomePage />} />
@@ -44,6 +63,7 @@ export default function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
+        <CommandPalette />
       </BrowserRouter>
       <ThemeSwitcher />
       <ToastContainer />
