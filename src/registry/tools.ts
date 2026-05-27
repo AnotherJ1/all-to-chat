@@ -18,6 +18,7 @@ export const toolRegistry: ToolMeta[] = [
     icon: IconChat,
     route: '/chat',
     component: lazy(() => import('../pages/ChatPage')),
+    category: 'ai',
   },
   {
     id: 'image-gen',
@@ -26,6 +27,7 @@ export const toolRegistry: ToolMeta[] = [
     icon: IconImage,
     route: '/image',
     component: lazy(() => import('../pages/ImagePage')),
+    category: 'ai',
     disabled: true,
   },
   {
@@ -35,6 +37,7 @@ export const toolRegistry: ToolMeta[] = [
     icon: IconJson,
     route: '/json',
     component: lazy(() => import('../pages/JsonFormatterPage')),
+    category: 'text-data',
   },
   {
     id: 'mybatis-log',
@@ -43,6 +46,7 @@ export const toolRegistry: ToolMeta[] = [
     icon: IconDatabase,
     route: '/mybatis',
     component: lazy(() => import('../pages/MybatisLogPage')),
+    category: 'dev',
   },
   {
     id: 'base64-image',
@@ -51,6 +55,7 @@ export const toolRegistry: ToolMeta[] = [
     icon: IconBase64,
     route: '/base64-image',
     component: lazy(() => import('../pages/Base64ImagePage')),
+    category: 'image',
   },
   {
     id: 'timestamp',
@@ -59,6 +64,7 @@ export const toolRegistry: ToolMeta[] = [
     icon: IconClock,
     route: '/timestamp',
     component: lazy(() => import('../pages/TimestampPage')),
+    category: 'encode',
   },
   {
     id: 'url-tool',
@@ -67,6 +73,7 @@ export const toolRegistry: ToolMeta[] = [
     icon: IconLink,
     route: '/url',
     component: lazy(() => import('../pages/UrlToolPage')),
+    category: 'encode',
   },
   {
     id: 'cron',
@@ -75,6 +82,7 @@ export const toolRegistry: ToolMeta[] = [
     icon: IconCron,
     route: '/cron',
     component: lazy(() => import('../pages/CronPage')),
+    category: 'dev',
   },
   {
     id: 'text-diff',
@@ -83,6 +91,7 @@ export const toolRegistry: ToolMeta[] = [
     icon: IconDiff,
     route: '/diff',
     component: lazy(() => import('../pages/DiffPage')),
+    category: 'text-data',
   },
   {
     id: 'collage',
@@ -91,6 +100,7 @@ export const toolRegistry: ToolMeta[] = [
     icon: IconCollage,
     route: '/collage',
     component: lazy(() => import('../pages/CollagePage')),
+    category: 'image',
   },
   {
     id: 'qr-code',
@@ -99,6 +109,7 @@ export const toolRegistry: ToolMeta[] = [
     icon: IconQrCode,
     route: '/qr-code',
     component: lazy(() => import('../pages/QrCodePage')),
+    category: 'image',
   },
   // === 批次 A-D 新增工具 ===
   {
@@ -108,6 +119,7 @@ export const toolRegistry: ToolMeta[] = [
     icon: IconCurl,
     route: '/curl',
     component: lazy(() => import('../pages/CurlPage')),
+    category: 'dev',
   },
   {
     id: 'color',
@@ -116,6 +128,7 @@ export const toolRegistry: ToolMeta[] = [
     icon: IconColor,
     route: '/color',
     component: lazy(() => import('../pages/ColorPage')),
+    category: 'image',
   },
   {
     id: 'data-convert',
@@ -124,6 +137,7 @@ export const toolRegistry: ToolMeta[] = [
     icon: IconDataConvert,
     route: '/data-convert',
     component: lazy(() => import('../pages/DataConvertPage')),
+    category: 'text-data',
   },
   {
     id: 'id-gen',
@@ -132,6 +146,7 @@ export const toolRegistry: ToolMeta[] = [
     icon: IconIdGen,
     route: '/id-gen',
     component: lazy(() => import('../pages/IdGenPage')),
+    category: 'dev',
   },
   {
     id: 'image-compress',
@@ -140,6 +155,7 @@ export const toolRegistry: ToolMeta[] = [
     icon: IconImageCompress,
     route: '/image-compress',
     component: lazy(() => import('../pages/ImageCompressPage')),
+    category: 'image',
   },
   {
     id: 'markdown',
@@ -148,6 +164,7 @@ export const toolRegistry: ToolMeta[] = [
     icon: IconMarkdown,
     route: '/markdown',
     component: lazy(() => import('../pages/MarkdownPage')),
+    category: 'text-data',
   },
   {
     id: 'csv',
@@ -156,5 +173,6 @@ export const toolRegistry: ToolMeta[] = [
     icon: IconCsv,
     route: '/csv',
     component: lazy(() => import('../pages/CsvPage')),
+    category: 'text-data',
   },
 ]
