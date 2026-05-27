@@ -66,4 +66,16 @@ describe('Property 4: 工具注册表结构完整性', () => {
     expect(imageEntry).toBeDefined()
     expect(imageEntry!.route).toBe('/image')
   })
+
+  it.each(toolRegistry)('条目 "$id" 的 category 应为合法值', (entry) => {
+    expect(['ai', 'text-data', 'dev', 'image', 'encode']).toContain(entry.category)
+  })
+
+  it('每个 categoryRegistry 中的分类都至少有一个工具归属', async () => {
+    const { categoryRegistry } = await import('../registry/categories')
+    for (const cat of categoryRegistry) {
+      const has = toolRegistry.some((t) => t.category === cat.id)
+      expect(has, `category ${cat.id} should have at least one tool`).toBe(true)
+    }
+  })
 })
