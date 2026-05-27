@@ -59,10 +59,12 @@ describe('Property 2: 首页渲染所有注册工具', () => {
       </MemoryRouter>,
     )
 
-    // ToolCard 使用 <button> 元素，数量应至少等于注册工具数量
-    // （SearchBar 也会渲染一个用于打开命令面板的按钮，因此使用下限断言）
-    const buttons = screen.getAllByRole('button')
-    expect(buttons.length).toBeGreaterThanOrEqual(toolRegistry.length)
+    // ToolCard 使用 <button> 元素；排除 SearchBar 的 ⌘K 触发按钮后，
+    // 工具按钮数量应精确等于注册工具数量
+    const toolButtons = screen
+      .getAllByRole('button')
+      .filter((b) => b.getAttribute('aria-label') !== '打开命令面板')
+    expect(toolButtons).toHaveLength(toolRegistry.length)
   })
 })
 
