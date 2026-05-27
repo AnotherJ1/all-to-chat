@@ -60,7 +60,8 @@ describe('Property 2: 首页渲染所有注册工具', () => {
     )
 
     // ToolCard 使用 <button> 元素；排除 SearchBar 的 ⌘K 触发按钮后，
-    // 工具按钮数量应精确等于注册工具数量
+    // 工具按钮数量应精确等于注册工具数量。
+    // 分类 tab 使用 role="tab"，不会被 getAllByRole('button') 匹配。
     const toolButtons = screen
       .getAllByRole('button')
       .filter((b) => b.getAttribute('aria-label') !== '打开命令面板')

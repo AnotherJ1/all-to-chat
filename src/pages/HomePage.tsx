@@ -9,7 +9,9 @@ import { useThemeStore } from '../stores/themeStore'
 import { useCommandPaletteStore } from '../stores/commandPaletteStore'
 import { searchTools } from '../lib/searchTools'
 import { toast } from '../stores/toastStore'
-import type { ToolMeta } from '../types'
+import type { ToolCategory, ToolMeta } from '../types'
+
+type TabId = ToolCategory | 'all'
 
 export default function HomePage() {
   const navigate = useNavigate()
@@ -17,15 +19,25 @@ export default function HomePage() {
   const openPalette = useCommandPaletteStore((s) => s.setOpen)
 
   const [query, setQuery] = useState('')
+  const [activeTab, setActiveTab] = useState<TabId>('all')
 
   const filtered = useMemo(() => searchTools(query, toolRegistry), [query])
 
-  const groups = useMemo(() => {
-    const cats = getOrderedCategories()
-    return cats
-      .map((cat) => ({ cat, tools: filtered.filter((t) => t.category === cat.id) }))
-      .filter((g) => g.tools.length > 0)
-  }, [filtered])
+  const orderedCategories = useMemo(() => getOrderedCategories(), [])
+
+  // 计算每个分类在当前搜索结果下的工具数（用于 tab 上的计数徽标）
+  const countByCategory = useMemo(() => {
+    const map: Record<string, number> = { all: filtered.length }
+    for (const cat of orderedCategories) {
+      map[cat.id] = filtered.filter((t) => t.category === cat.id).length
+    }
+    return map
+  }, [filtered, orderedCategories])
+
+  const visibleTools = useMemo(() => {
+    if (activeTab === 'all') return filtered
+    return filtered.filter((t) => t.category === activeTab)
+  }, [filtered, activeTab])
 
   const handleToolClick = (tool: ToolMeta) => {
     if (tool.disabled) {
@@ -35,8 +47,10 @@ export default function HomePage() {
     navigate(tool.route)
   }
 
-  // 为每张卡片计算稳定的全局 index，保证强调色随分类位置不抖
-  let runningIndex = 0
+  const tabs: { id: TabId; name: string }[] = [
+    { id: 'all', name: '全部' },
+    ...orderedCategories.map((c) => ({ id: c.id as TabId, name: c.name })),
+  ]
 
   return (
     <div className="min-h-screen flex flex-col items-center px-6 py-16 relative overflow-hidden">
@@ -69,12 +83,58 @@ export default function HomePage() {
         </p>
       </header>
 
-      <div className="w-full max-w-5xl relative z-10 mb-12">
+      <div className="w-full max-w-5xl relative z-10 mb-8">
         <SearchBar value={query} onChange={setQuery} onOpenPalette={() => openPalette(true)} />
       </div>
 
-      <div className="w-full max-w-5xl relative z-10 flex flex-col gap-12">
-        {groups.length === 0 ? (
+      <div
+        className="w-full max-w-5xl relative z-10 mb-10 flex flex-wrap items-center justify-center gap-2"
+        role="tablist"
+        aria-label="工具分类"
+      >
+        {tabs.map((tab) => {
+          const active = activeTab === tab.id
+          const count = countByCategory[tab.id] ?? 0
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => setActiveTab(tab.id)}
+              className="px-4 py-2 rounded-full transition-colors flex items-center gap-2"
+              style={{
+                background: active
+                  ? 'var(--accent, var(--text-primary))'
+                  : 'var(--surface-elevated, var(--bg-secondary))',
+                color: active
+                  ? 'var(--bg-primary, #fff)'
+                  : 'var(--text-primary)',
+                border: '1px solid var(--border-color, rgba(127,127,127,0.2))',
+                fontFamily: 'var(--font-body)',
+                fontSize: '0.9rem',
+                fontWeight: active ? 600 : 500,
+              }}
+            >
+              <span>{tab.name}</span>
+              <span
+                style={{
+                  fontSize: '0.75rem',
+                  opacity: 0.75,
+                  padding: '0 0.4rem',
+                  borderRadius: '999px',
+                  background: active ? 'rgba(255,255,255,0.18)' : 'rgba(127,127,127,0.15)',
+                }}
+              >
+                {count}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="w-full max-w-5xl relative z-10">
+        {visibleTools.length === 0 ? (
           <div
             className="text-center py-12"
             style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-body)' }}
@@ -82,33 +142,11 @@ export default function HomePage() {
             没有找到相关工具
           </div>
         ) : (
-          groups.map(({ cat, tools }) => (
-            <section key={cat.id} aria-labelledby={`cat-${cat.id}`}>
-              <h2
-                id={`cat-${cat.id}`}
-                className="mb-5 pb-2 font-semibold"
-                style={{
-                  fontFamily: 'var(--font-heading)',
-                  fontSize: '1.1rem',
-                  color: 'var(--text-primary)',
-                  borderBottom: '1px solid var(--border-color, rgba(127,127,127,0.18))',
-                }}
-              >
-                {cat.name}
-                <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginLeft: '0.5rem', fontWeight: 400 }}>
-                  {tools.length}
-                </span>
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                {tools.map((tool) => {
-                  const idx = runningIndex++
-                  return (
-                    <ToolCard key={tool.id} tool={tool} onClick={() => handleToolClick(tool)} index={idx} />
-                  )
-                })}
-              </div>
-            </section>
-          ))
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {visibleTools.map((tool, idx) => (
+              <ToolCard key={tool.id} tool={tool} onClick={() => handleToolClick(tool)} index={idx} />
+            ))}
+          </div>
         )}
       </div>
     </div>
