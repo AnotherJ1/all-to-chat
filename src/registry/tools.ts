@@ -3,7 +3,7 @@ import type { ToolMeta } from '../types'
 import {
   IconChat, IconImage, IconJson, IconDatabase, IconBase64, IconClock, IconLink, IconCron, IconDiff, IconCollage, IconQrCode,
   // 批次 A-D 新增
-  IconCurl, IconColor, IconDataConvert, IconIdGen, IconImageCompress, IconMarkdown, IconCsv,
+  IconCurl, IconColor, IconDataConvert, IconIdGen, IconImageCompress, IconMarkdown, IconCsv, IconFileTransfer,
 } from '../components/common/Icons'
 
 /**
@@ -174,5 +174,15 @@ export const toolRegistry: ToolMeta[] = [
     route: '/csv',
     component: lazy(() => import('../pages/CsvPage')),
     category: 'text-data',
+  },
+  {
+    id: 'file-transfer',
+    name: '文件传输',
+    description: '跨设备 P2P 直传文件与文本，内网零服务器，外网即将推出',
+    icon: IconFileTransfer,
+    route: '/file-transfer',
+    component: lazy(() => import('../pages/FileTransferPage')),
+    category: 'dev',
+    keywords: ['p2p', 'webrtc', '传文件', '互传', 'send', 'share', 'airdrop'],
   },
 ]
