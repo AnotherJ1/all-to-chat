@@ -39,24 +39,28 @@ export function useFileTransfer(): UseFileTransfer {
   const [localCode, setLocalCode] = useState('')
   const [items, setItems] = useState<TransferItem[]>([])
   const peerRef = useRef<Peer | null>(null)
+  /** 代次计数：reset / 重建 peer 时自增，用于失效旧 Peer 的异步回调 */
+  const genRef = useRef(0)
 
   /** 局部更新某条 item */
   const patchItem = useCallback((id: string, patch: Partial<TransferItem>) => {
     setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)))
   }, [])
 
-  /** 构造 Peer 的事件回调 */
-  const makeHandlers = useCallback(() => ({
-    onOpen: () => setState('connected'),
-    onClose: () => setState((s) => (s === 'error' ? s : 'idle')),
-    onError: (msg: string) => { setError(msg); setState('error') },
-    onIncomingMeta: (item: TransferItem) => setItems((prev) => [...prev, item]),
-    onRecvProgress: (id: string, progress: number) => patchItem(id, { progress }),
-    onRecvDone: (id: string, payload: { blob?: Blob; content?: string }) =>
-      patchItem(id, { status: 'done', progress: 1, blob: payload.blob, content: payload.content }),
-    onSendProgress: (id: string, progress: number) =>
-      patchItem(id, { progress, status: progress >= 1 ? 'done' : 'active' }),
-  }), [patchItem])
+  /** 构造 Peer 的事件回调（闭包捕获当前代次，过期回调直接丢弃） */
+  const makeHandlers = useCallback(() => {
+    const gen = genRef.current
+    const fresh = () => gen === genRef.current
+    return {
+      onOpen: () => { if (fresh()) setState('connected') },
+      onClose: () => { if (fresh()) setState((s) => (s === 'error' ? s : 'idle')) },
+      onError: (msg: string) => { if (fresh()) { setError(msg); setState('error') } },
+      onIncomingMeta: (item: TransferItem) => { if (fresh()) setItems((prev) => [...prev, item]) },
+      onRecvProgress: (id: string, progress: number) => { if (fresh()) patchItem(id, { progress }) },
+      onRecvDone: (id: string, payload: { blob?: Blob; content?: string }) => { if (fresh()) patchItem(id, { status: 'done', progress: 1, blob: payload.blob, content: payload.content }) },
+      onSendProgress: (id: string, progress: number) => { if (fresh()) patchItem(id, { progress, status: progress >= 1 ? 'done' : 'active' }) },
+    }
+  }, [patchItem])
 
   /** 发送方：初始化并生成 offer 连接码 */
   const startAsSender = useCallback(async () => {
@@ -64,6 +68,8 @@ export function useFileTransfer(): UseFileTransfer {
     setError(null)
     setState('creating-offer')
     try {
+      peerRef.current?.close()
+      genRef.current++
       const peer = new Peer('sender', makeHandlers())
       peerRef.current = peer
       const offerSdp = await peer.createOffer()
@@ -80,6 +86,8 @@ export function useFileTransfer(): UseFileTransfer {
     setRole('receiver')
     setError(null)
     setState('idle')
+    peerRef.current?.close()
+    genRef.current++
     peerRef.current = new Peer('receiver', makeHandlers())
   }, [makeHandlers])
 
@@ -167,6 +175,7 @@ export function useFileTransfer(): UseFileTransfer {
   /** 复位会话 */
   const reset = useCallback(() => {
     peerRef.current?.close()
+    genRef.current++
     peerRef.current = null
     setRole(null)
     setState('idle')
