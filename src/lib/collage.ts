@@ -10,10 +10,10 @@
 import type { CanvasPreset, CanvasSize, CollageItem, ResizeCorner } from '../types/collage'
 
 /** 画布最大边长上限（像素），防止 canvas 内存爆炸 */
-export const MAX_CANVAS_DIMENSION = 4096
+export const MAX_CANVAS_DIMENSION = 8000
 
 /** 画布最小边长 */
-export const MIN_CANVAS_DIMENSION = 200
+export const MIN_CANVAS_DIMENSION = 1
 
 /** 画布上同时存在的最大图片数量 */
 export const MAX_ITEMS_PER_CANVAS = 20

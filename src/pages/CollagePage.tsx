@@ -49,6 +49,8 @@ export default function CollagePage() {
   const [exporting, setExporting] = useState(false)
   const [jpgQuality, setJpgQuality] = useState(0.92)
   const [isDragOver, setIsDragOver] = useState(false)
+  /** 自定义尺寸输入框的草稿值：输入时不钳制，失焦/回车再提交，避免边打边被改 */
+  const [sizeDraft, setSizeDraft] = useState<{ w: string; h: string } | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const canvasRef = useRef<HTMLDivElement>(null)
@@ -285,6 +287,17 @@ export default function CollagePage() {
     setItems((prev) => prev.map((it) => clampItemToCanvas(it, next)))
   }
 
+  /** 进入编辑：用当前画布值初始化草稿 */
+  const draftW = sizeDraft ? sizeDraft.w : String(canvas.width)
+  const draftH = sizeDraft ? sizeDraft.h : String(canvas.height)
+
+  /** 提交草稿：把字符串解析+钳制后写回画布，再清空草稿 */
+  const commitSizeDraft = () => {
+    if (!sizeDraft) return
+    setCustomSize(Number(sizeDraft.w), Number(sizeDraft.h))
+    setSizeDraft(null)
+  }
+
   // ============ 导出 ============
 
   const doExport = async (kind: 'png' | 'jpg' | 'clipboard') => {
@@ -352,20 +365,28 @@ export default function CollagePage() {
               <input
                 type="number"
                 className="theme-input"
-                value={canvas.width}
+                value={draftW}
                 min={MIN_CANVAS_DIMENSION}
                 max={MAX_CANVAS_DIMENSION}
-                onChange={(e) => setCustomSize(Number(e.target.value), canvas.height)}
+                onChange={(e) => setSizeDraft({ w: e.target.value, h: draftH })}
+                onBlur={commitSizeDraft}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                }}
                 style={{ width: '88px', padding: '4px 8px', fontSize: '13px', height: 'auto' }}
               />
               <span style={{ color: 'var(--text-muted)' }}>×</span>
               <input
                 type="number"
                 className="theme-input"
-                value={canvas.height}
+                value={draftH}
                 min={MIN_CANVAS_DIMENSION}
                 max={MAX_CANVAS_DIMENSION}
-                onChange={(e) => setCustomSize(canvas.width, Number(e.target.value))}
+                onChange={(e) => setSizeDraft({ w: draftW, h: e.target.value })}
+                onBlur={commitSizeDraft}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                }}
                 style={{ width: '88px', padding: '4px 8px', fontSize: '13px', height: 'auto' }}
               />
               <span style={{ color: 'var(--text-muted)' }}>px</span>
