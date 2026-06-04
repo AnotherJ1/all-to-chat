@@ -134,6 +134,8 @@ export default function JsonFormatterPage() {
   const [copySuccess, setCopySuccess] = useState(false)
   const [fontSize, setFontSize] = useState(13)
   const [editorHeight, setEditorHeight] = useState(400)
+  // 全屏（页内沉浸）模式：输入区与预览区高度撑满视口
+  const [isFullscreen, setIsFullscreen] = useState(false)
 
   const workerRef = useRef<Worker | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -178,6 +180,21 @@ export default function JsonFormatterPage() {
   useEffect(() => {
     return () => { workerRef.current?.terminate() }
   }, [])
+
+  // 全屏模式：监听 ESC 退出；进入时锁定 body 滚动，退出时恢复
+  useEffect(() => {
+    if (!isFullscreen) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsFullscreen(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      document.body.style.overflow = prevOverflow
+    }
+  }, [isFullscreen])
 
   /** 主线程处理小 JSON */
   const processInMainThread = useCallback((type: 'format' | 'minify', data: string) => {
@@ -260,11 +277,28 @@ export default function JsonFormatterPage() {
     try { setParsedJson(JSON.parse(record.input)) } catch { setParsedJson(undefined) }
   }
 
-  return (
-    <div className="min-h-screen w-full" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
-      <BackToHome />
+  // 全屏时面板高度撑满视口（减去 header/padding 余量）；非全屏沿用拖拽得到的 editorHeight
+  const panelHeight = isFullscreen ? 'calc(100vh - 120px)' : `${editorHeight}px`
 
-      <header className="text-center pt-16 pb-6 px-4">
+  return (
+    <div
+      className={isFullscreen ? 'w-full' : 'min-h-screen w-full'}
+      style={
+        isFullscreen
+          ? {
+              position: 'fixed',
+              inset: 0,
+              zIndex: 50,
+              background: 'var(--bg-primary)',
+              color: 'var(--text-primary)',
+              overflow: 'auto',
+            }
+          : { background: 'var(--bg-primary)', color: 'var(--text-primary)' }
+      }
+    >
+      {!isFullscreen && <BackToHome />}
+
+      <header className={isFullscreen ? 'text-center pt-4 pb-3 px-4' : 'text-center pt-16 pb-6 px-4'}>
         <h1 className="text-2xl font-bold" style={{ fontFamily: 'var(--font-heading)', color: 'var(--text-primary)' }}>
           JSON 格式化工具
         </h1>
@@ -287,7 +321,7 @@ export default function JsonFormatterPage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="粘贴 JSON 数据..."
-            style={{ height: `${editorHeight}px`, minHeight: '200px', maxHeight: '800px', resize: 'vertical', fontFamily: 'var(--font-mono)', fontSize: '13px', lineHeight: '1.6' }}
+            style={{ height: panelHeight, minHeight: '200px', maxHeight: isFullscreen ? 'none' : '800px', resize: isFullscreen ? 'none' : 'vertical', fontFamily: 'var(--font-mono)', fontSize: '13px', lineHeight: '1.6' }}
             spellCheck={false}
           />
         </div>
@@ -315,6 +349,14 @@ export default function JsonFormatterPage() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
             <label className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>结果预览</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button
+                className="theme-btn"
+                style={{ padding: '2px 10px', fontSize: '12px', lineHeight: 1 }}
+                onClick={() => setIsFullscreen((v) => !v)}
+                title={isFullscreen ? '退出全屏（ESC）' : '全屏：输入与预览区铺满浏览器'}
+              >
+                {isFullscreen ? '退出全屏' : '全屏'}
+              </button>
               <button className="theme-btn" style={{ padding: '2px 8px', fontSize: '12px', lineHeight: 1 }} onClick={() => setFontSize((s) => Math.max(10, s - 1))} title="缩小字体">A-</button>
               <span style={{ fontSize: '12px', color: 'var(--text-muted)', minWidth: '28px', textAlign: 'center' }}>{fontSize}px</span>
               <button className="theme-btn" style={{ padding: '2px 8px', fontSize: '12px', lineHeight: 1 }} onClick={() => setFontSize((s) => Math.min(24, s + 1))} title="放大字体">A+</button>
@@ -323,9 +365,9 @@ export default function JsonFormatterPage() {
           <pre
             ref={previewRef}
             style={{
-              height: `${editorHeight}px`,
+              height: panelHeight,
               minHeight: '200px',
-              maxHeight: '800px',
+              maxHeight: isFullscreen ? 'none' : '800px',
               margin: 0,
               padding: '16px',
               overflow: 'auto',
@@ -351,7 +393,8 @@ export default function JsonFormatterPage() {
         </div>
       </main>
 
-      {/* 底部可折叠历史记录面板 */}
+      {/* 底部可折叠历史记录面板（全屏沉浸模式下隐藏） */}
+      {!isFullscreen && (
       <section style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 16px 24px' }}>
         <button
           className="theme-btn"
@@ -379,6 +422,7 @@ export default function JsonFormatterPage() {
           </div>
         )}
       </section>
+      )}
 
       {/* 响应式样式 */}
       <style>{`
