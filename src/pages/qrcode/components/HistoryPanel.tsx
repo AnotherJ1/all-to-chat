@@ -39,11 +39,13 @@ function formatRelative(ts: number): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
-export function HistoryPanel() {
+export function HistoryPanel({ embedded = false }: { embedded?: boolean } = {}) {
   const { generator } = useQrCodeContext()
   const { history, removeItem, clearAll } = useQrHistory()
 
   const [open, setOpen] = useState<boolean>(false)
+  // embedded 模式下内容区恒展开，不渲染折叠头
+  const expanded = embedded || open
   /** 二次确认：第一次点变为"再点一次确认"，3 秒未点取消 */
   const [confirmClear, setConfirmClear] = useState<boolean>(false)
   const confirmTimerRef = useRef<number | null>(null)
@@ -106,22 +108,46 @@ export function HistoryPanel() {
         borderRadius: 'var(--radius)',
       }}
     >
-      {/* 折叠头 */}
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        aria-controls="qr-history-list"
-        className="w-full flex items-center justify-between px-4 py-3 text-left"
-        style={{
-          background: 'transparent',
-          border: 'none',
-          cursor: 'pointer',
-          color: 'var(--text-primary)',
-          fontFamily: 'var(--font-heading)',
-        }}
-      >
-        <span className="flex items-center gap-2 font-semibold">
+      {/* 折叠头（非 embedded 时渲染，保留原折叠交互） */}
+      {!embedded && (
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          aria-controls="qr-history-list"
+          className="w-full flex items-center justify-between px-4 py-3 text-left"
+          style={{
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            color: 'var(--text-primary)',
+            fontFamily: 'var(--font-heading)',
+          }}
+        >
+          <span className="flex items-center gap-2 font-semibold">
+            <span style={{ color: 'var(--accent-1)' }}>🕘</span>
+            历史记录
+            <span
+              className="text-xs px-2 py-0.5 rounded-full"
+              style={{
+                background: 'var(--bg-surface)',
+                color: 'var(--text-muted)',
+                border: '1px solid var(--border-color)',
+              }}
+            >
+              {count}
+            </span>
+          </span>
+          <span style={{ color: 'var(--text-muted)' }}>{open ? '▾' : '▸'}</span>
+        </button>
+      )}
+
+      {/* embedded 模式下用静态标题行替代被隐藏的折叠头，保持视觉完整 */}
+      {embedded && (
+        <div
+          className="flex items-center gap-2 px-4 py-3 font-semibold"
+          style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-heading)' }}
+        >
           <span style={{ color: 'var(--accent-1)' }}>🕘</span>
           历史记录
           <span
@@ -134,11 +160,10 @@ export function HistoryPanel() {
           >
             {count}
           </span>
-        </span>
-        <span style={{ color: 'var(--text-muted)' }}>{open ? '▾' : '▸'}</span>
-      </button>
+        </div>
+      )}
 
-      {open && (
+      {expanded && (
         <div id="qr-history-list" className="px-4 pb-4">
           <div className="flex justify-end mb-2">
             <button

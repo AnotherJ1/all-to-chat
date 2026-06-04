@@ -33,6 +33,8 @@ export default function QrCodePage() {
   // URL 状态同步（generator 字段变化 → URL）
   useQrUrlSync(generator)
 
+  // 四 Tab 布局状态：生成 | 解析 | 批量 | 历史
+  const [activeTab, setActiveTab] = useState<'generate' | 'parse' | 'batch' | 'history'>('generate')
   // 拖拽视觉反馈（Bug #12）
   const [isDragging, setIsDragging] = useState(false)
   // 颜色输入暂存（用户可能正在输入未完成的 hex）
@@ -157,13 +159,59 @@ export default function QrCodePage() {
           </p>
         </header>
 
+        {/* ===== Tab 栏（生成 | 解析 | 批量 | 历史），居中并与 main 对齐 ===== */}
+        <div
+          role="tablist"
+          aria-label="二维码工具页签"
+          className="flex justify-center gap-2 px-4 mb-6"
+          style={{ maxWidth: '1200px', margin: '0 auto 1.5rem' }}
+        >
+          {([
+            { key: 'generate', label: '生成' },
+            { key: 'parse', label: '解析' },
+            { key: 'batch', label: '批量' },
+            { key: 'history', label: '历史' },
+          ] as const).map((t) => {
+            const active = activeTab === t.key
+            return (
+              <button
+                key={t.key}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setActiveTab(t.key)}
+                className="theme-btn"
+                style={{
+                  padding: '6px 16px',
+                  fontSize: '13px',
+                  fontWeight: active ? 600 : 400,
+                  background: active ? 'var(--accent-1)' : 'transparent',
+                  color: active ? 'var(--bg-primary)' : 'var(--text-secondary)',
+                  borderColor: active ? 'var(--accent-1)' : 'var(--border-color)',
+                }}
+              >
+                {t.label}
+              </button>
+            )
+          })}
+        </div>
+
         <main
-          className="grid grid-cols-1 lg:grid-cols-2 gap-8 px-4"
+          className="px-4"
           style={{ maxWidth: '1200px', margin: '0 auto' }}
           onPaste={onPaste}
         >
-          {/* ===== 左侧：二维码生成 ===== */}
-          <section className="theme-card flex flex-col p-6 cursor-default" style={{ height: 'fit-content' }}>
+          {/* ===== 生成 Tab ===== */}
+          <div
+            role="tabpanel"
+            style={{ display: activeTab === 'generate' ? undefined : 'none' }}
+          >
+          <section
+            className="theme-card cursor-default p-6 grid grid-cols-1 lg:grid-cols-[1fr_minmax(320px,420px)] gap-6"
+            style={{ height: 'fit-content' }}
+          >
+            {/* ----- 左列：控制区 ----- */}
+            <div className="flex flex-col">
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2" style={{ fontFamily: 'var(--font-heading)' }}>
               <span style={{ color: 'var(--accent-1)' }}>●</span> 二维码生成
             </h2>
@@ -358,7 +406,12 @@ export default function QrCodePage() {
                   )}
                 </div>
               </div>
+            </div>
+            {/* ----- 左列结束 ----- */}
+            </div>
 
+            {/* ----- 右列：sticky 预览 ----- */}
+            <div style={{ position: 'sticky', top: '1rem', height: 'fit-content' }}>
               {/* 二维码预览及下载区域 */}
               <div
                 className="flex flex-col items-center mt-4 p-6 rounded-lg"
@@ -406,15 +459,20 @@ export default function QrCodePage() {
                 </div>
               </div>
             </div>
-
-            {/* worker-5 历史记录挂载点 */}
-            <HistoryPanel />
-            {/* worker-5 批量面板挂载点 */}
-            <BatchPanel />
+            {/* ----- 右列结束 ----- */}
           </section>
+          </div>
+          {/* ===== 生成 Tab 结束 ===== */}
 
-          {/* ===== 右侧：二维码解析 ===== */}
-          <section className="theme-card flex flex-col p-6 cursor-default" style={{ height: 'fit-content' }}>
+          {/* ===== 解析 Tab ===== */}
+          <div
+            role="tabpanel"
+            style={{ display: activeTab === 'parse' ? undefined : 'none' }}
+          >
+          <section
+            className="theme-card flex flex-col p-6 cursor-default"
+            style={{ height: 'fit-content', maxWidth: '640px', margin: '0 auto' }}
+          >
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2" style={{ fontFamily: 'var(--font-heading)' }}>
               <span style={{ color: 'var(--accent-2)' }}>●</span> 二维码解析
             </h2>
@@ -551,6 +609,32 @@ export default function QrCodePage() {
               )}
             </div>
           </section>
+          </div>
+          {/* ===== 解析 Tab 结束 ===== */}
+
+          {/* ===== 批量 Tab ===== */}
+          <div
+            role="tabpanel"
+            style={{ display: activeTab === 'batch' ? undefined : 'none' }}
+          >
+            <div style={{ maxWidth: '720px', margin: '0 auto' }}>
+              {/* worker-5 批量面板挂载点 */}
+              <BatchPanel />
+            </div>
+          </div>
+          {/* ===== 批量 Tab 结束 ===== */}
+
+          {/* ===== 历史 Tab ===== */}
+          <div
+            role="tabpanel"
+            style={{ display: activeTab === 'history' ? undefined : 'none' }}
+          >
+            <div style={{ maxWidth: '720px', margin: '0 auto' }}>
+              {/* worker-5 历史记录挂载点（embedded：常显，无折叠头） */}
+              <HistoryPanel embedded />
+            </div>
+          </div>
+          {/* ===== 历史 Tab 结束 ===== */}
         </main>
       </div>
     </QrCodeContext.Provider>
