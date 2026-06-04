@@ -215,9 +215,6 @@ npm run build
 
 ### 部署到 Cloudflare Pages
 
-</text>
-</invoke>
-
 #### 方式一：通过 Git 集成（推荐）
 
 1. **将代码推送到 GitHub/GitLab 仓库**

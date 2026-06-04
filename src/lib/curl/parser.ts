@@ -86,8 +86,11 @@ export function tokenizeShell(input: string): string[] {
         buf += input[i]
         i++
       }
-      // 跳过闭合单引号（若缺失则容错）
-      if (i < input.length) i++
+      // 闭合单引号缺失：明确报错，避免静默吞掉后续 token
+      if (i >= input.length) {
+        throw new Error('引号未闭合：缺少配对的单引号 (\')')
+      }
+      i++ // 跳过闭合单引号
       continue
     }
 
@@ -116,7 +119,11 @@ export function tokenizeShell(input: string): string[] {
         buf += input[i]
         i++
       }
-      if (i < input.length) i++
+      // 闭合双引号缺失：明确报错，避免静默吞掉后续 token
+      if (i >= input.length) {
+        throw new Error('引号未闭合：缺少配对的双引号 (")')
+      }
+      i++ // 跳过闭合双引号
       continue
     }
 

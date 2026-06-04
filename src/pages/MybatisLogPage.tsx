@@ -79,14 +79,25 @@ export default function MybatisLogPage() {
     inputRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [])
 
+  // HTML 转义（高亮失败时兜底，避免原始输入注入 DOM 造成 XSS）
+  const escapeHtml = useCallback((s: string): string => {
+    return s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+  }, [])
+
   // SQL 高亮渲染
   const highlightSql = useCallback((sqlText: string): string => {
     try {
       return hljs.highlight(sqlText, { language: 'sql' }).value
     } catch {
-      return sqlText
+      // 高亮失败时返回转义后的文本，绝不把原始输入直接交给 dangerouslySetInnerHTML
+      return escapeHtml(sqlText)
     }
-  }, [])
+  }, [escapeHtml])
 
   // 格式化时间戳
   const formatTime = useCallback((timestamp: number): string => {

@@ -40,17 +40,20 @@ export default function ChatView() {
 
   // 重新生成最后一条 assistant 消息
   const handleRegenerate = useCallback(async (messageId: string) => {
-    if (!currentSession) return
-    const msgIndex = currentSession.messages.findIndex((m) => m.id === messageId)
+    // 始终从 store 读取最新会话，避免闭包捕获旧的 currentSession（流式期间用户可能已发新消息）
+    const session = useSessionStore.getState().getCurrentSession()
+    if (!session) return
+    const sessionId = session.id
+    const msgIndex = session.messages.findIndex((m) => m.id === messageId)
     if (msgIndex < 0) return
 
     // 找到这条 assistant 消息之前的最后一条 user 消息
-    const prevMessages = currentSession.messages.slice(0, msgIndex)
+    const prevMessages = session.messages.slice(0, msgIndex)
     const { protocol, getCurrentConfig: getConfig } = useConfigStore.getState()
     const { baseUrl, apiKey, model, systemPrompt } = getConfig()
 
     // 清空当前 assistant 消息内容
-    updateMessage(currentSession.id, messageId, '')
+    updateMessage(sessionId, messageId, '')
 
     try {
       await callApi({
@@ -62,10 +65,10 @@ export default function ChatView() {
         systemPrompt: systemPrompt || undefined,
         streaming: true,
         onChunk: (chunk) => {
-          const session = useSessionStore.getState().sessions.find((s) => s.id === currentSession.id)
-          const msg = session?.messages.find((m) => m.id === messageId)
+          const cur = useSessionStore.getState().sessions.find((s) => s.id === sessionId)
+          const msg = cur?.messages.find((m) => m.id === messageId)
           if (msg) {
-            updateMessage(currentSession.id, messageId, msg.content + chunk)
+            updateMessage(sessionId, messageId, msg.content + chunk)
           }
         },
         onError: (error) => {
@@ -76,7 +79,7 @@ export default function ChatView() {
       // AbortError 不打扰用户；其他错误已在 onError 中提示
       void error
     }
-  }, [currentSession, updateMessage])
+  }, [updateMessage])
 
   const handleDelete = useCallback((messageId: string) => {
     if (!currentSession) return

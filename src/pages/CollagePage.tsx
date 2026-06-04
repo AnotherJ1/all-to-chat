@@ -308,7 +308,9 @@ export default function CollagePage() {
     setExporting(true)
     try {
       const fmt: 'png' | 'jpg' = kind === 'jpg' ? 'jpg' : 'png'
-      const blob = await composeCollage(items, canvas, fmt, jpgQuality)
+      const blob = await composeCollage(items, canvas, fmt, jpgQuality, (failedCount) => {
+        toast.error(`有 ${failedCount} 张图片加载失败，已从导出结果中跳过`)
+      })
       if (kind === 'clipboard') {
         await copyBlobToClipboard(blob)
         toast.success('已复制到剪贴板')

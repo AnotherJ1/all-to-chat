@@ -182,7 +182,9 @@ export async function composeCollage(
   items: CollageItem[],
   canvas: CanvasSize,
   format: 'png' | 'jpg',
-  quality = 0.92
+  quality = 0.92,
+  /** 单张图片加载失败时回调（用于向用户提示导出不完整） */
+  onSkip?: (failedCount: number) => void
 ): Promise<Blob> {
   const el = document.createElement('canvas')
   el.width = canvas.width
@@ -197,15 +199,18 @@ export async function composeCollage(
   }
 
   // 顺序绘制（保证层叠顺序与 UI 一致）
+  let failedCount = 0
   for (const item of items) {
     try {
       const img = await loadImage(item.src)
       ctx.drawImage(img, item.x, item.y, item.width, item.height)
     } catch (err) {
-      // 单张图加载失败不阻断整体导出，仅在控制台输出警告
+      // 单张图加载失败不阻断整体导出，记录数量并在控制台输出警告
+      failedCount++
       console.warn('[collage] 跳过加载失败的图片:', err)
     }
   }
+  if (failedCount > 0) onSkip?.(failedCount)
 
   const mime = format === 'png' ? 'image/png' : 'image/jpeg'
   return await new Promise<Blob>((resolve, reject) => {

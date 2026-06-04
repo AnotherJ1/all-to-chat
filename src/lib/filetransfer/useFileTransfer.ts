@@ -129,8 +129,11 @@ export function useFileTransfer(): UseFileTransfer {
   const sendFiles = useCallback(async (files: FileList | File[]) => {
     const peer = peerRef.current
     if (!peer) return
+    // 记录当前 peer 代次：传输途中若被 reset（genRef 自增），中止后续操作并忽略由连接关闭引发的报错
+    const gen = genRef.current
     const list = Array.from(files)
     for (const file of list) {
+      if (genRef.current !== gen) return
       const item: TransferItem = {
         id: nanoid(), kind: 'file', name: file.name, size: file.size,
         mime: file.type || 'application/octet-stream',
@@ -141,10 +144,13 @@ export function useFileTransfer(): UseFileTransfer {
       try {
         await peer.sendFile(item, file)
       } catch (e) {
+        // 已被 reset：连接关闭导致的报错属预期，静默丢弃
+        if (genRef.current !== gen) return
         patchItem(item.id, { status: 'failed' })
         setError(e instanceof Error ? e.message : '发送失败')
       }
     }
+    if (genRef.current !== gen) return
     setState('connected')
   }, [patchItem])
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import BackToHome from '../components/common/BackToHome'
 import { CRON_PRESETS, parseCron } from '../lib/cron-parser'
 import { toast } from '../stores/toastStore'
@@ -40,7 +40,12 @@ export default function CronPage() {
   const [expression, setExpression] = useState('0 9 * * 1-5')
   const [runCount, setRunCount] = useState(8)
 
-  const now = useMemo(() => new Date(), [expression]) // eslint-disable-line react-hooks/exhaustive-deps
+  // 每秒刷新当前时间，保证「X 分钟后」相对时间持续准确
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(id)
+  }, [])
 
   const result = useMemo(() => parseCron(expression, runCount, now), [expression, runCount, now])
 

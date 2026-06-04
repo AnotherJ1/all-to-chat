@@ -155,9 +155,20 @@ export function sanitizeUserHtml(html: string): string {
   // 4) 移除所有 on* 事件属性
   //    覆盖三种引号形态: onclick="..."  onclick='...'  onclick=xxx
   //    边界处理: 前置必须是空白(避免误伤 class="onerror" 之类的属性值)
-  out = out.replace(/\s+on\w+\s*=\s*"[^"]*"/gi, '')
-  out = out.replace(/\s+on\w+\s*=\s*'[^']*'/gi, '')
-  out = out.replace(/\s+on\w+\s*=\s*[^\s>]+/gi, '')
+  //    注意: \s 含换行, 故 <img src=x\nonerror=...> 这类换行分隔也能命中;
+  //    反复执行直到不再变化, 防止移除后相邻属性重新拼出新的 on* 形态
+  const stripOnAttrs = (s: string): string => {
+    let prev: string
+    do {
+      prev = s
+      s = s.replace(/\s+on\w+\s*=\s*"[^"]*"/gi, '')
+      s = s.replace(/\s+on\w+\s*=\s*'[^']*'/gi, '')
+      // 无引号形态: 值取到下一个空白/换行/`>` 为止 (\s 含换行)
+      s = s.replace(/\s+on\w+\s*=\s*[^\s>]*/gi, '')
+    } while (s !== prev)
+    return s
+  }
+  out = stripOnAttrs(out)
 
   // 5) 中和危险协议
   //    href="javascript:..."  src='vbscript:...'  href=javascript:...

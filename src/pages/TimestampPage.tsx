@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import BackToHome from '../components/common/BackToHome'
 import { toast } from '../stores/toastStore'
 
@@ -91,9 +91,12 @@ export default function TimestampPage() {
     return () => clearInterval(id)
   }, [])
 
-  // 自动识别：输入变化时根据数值大小切换秒/毫秒
-  // 用户仍可手动修改下拉框，下次输入变化时会被重新识别覆盖
+  // 用户是否手动指定过单位：一旦手动选择，自动识别不再覆盖
+  const unitManuallySet = useRef(false)
+
+  // 自动识别：输入变化时根据数值大小切换秒/毫秒（仅当用户未手动指定单位）
   useEffect(() => {
+    if (unitManuallySet.current) return
     const detected = detectUnit(tsInput)
     if (detected && detected !== tsUnit) {
       setTsUnit(detected)
@@ -206,7 +209,10 @@ export default function TimestampPage() {
                 className="theme-input"
                 style={{ width: '90px', flex: 'none' }}
                 value={tsUnit}
-                onChange={(e) => setTsUnit(e.target.value as Unit)}
+                onChange={(e) => {
+                  unitManuallySet.current = true
+                  setTsUnit(e.target.value as Unit)
+                }}
                 title="自动识别单位，可手动覆盖"
               >
                 <option value="s">秒</option>

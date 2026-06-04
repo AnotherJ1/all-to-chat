@@ -121,6 +121,14 @@ function calculateNextRuns(
   const results: Date[] = []
   const hasSecond = !!fields.second
 
+  // 「日」「周」是否被限定（非通配 * / ?）—— 决定二者取 OR 还是 AND
+  const isWildcard = (raw: string) => {
+    const t = raw.trim()
+    return t === '*' || t === '?'
+  }
+  const domRestricted = !isWildcard(fields.dayOfMonth.raw)
+  const dowRestricted = !isWildcard(fields.dayOfWeek.raw)
+
   // 起始时间：从 from 的下一秒（有秒字段）或下一分钟开始
   const cursor = new Date(from)
   if (hasSecond) {
@@ -152,7 +160,11 @@ function calculateNextRuns(
     const domOk = fields.dayOfMonth.values.includes(dom)
     const dowOk = fields.dayOfWeek.values.includes(dow)
 
-    if (secOk && minOk && hourOk && monOk && (domOk && dowOk)) {
+    // 标准 cron（Vixie cron）语义：当「日」和「周」都被限定（都不是 * / ?）时，
+    // 二者为 OR 关系（满足其一即触发）；否则为 AND（被限定的一方生效）。
+    const dayOk = domRestricted && dowRestricted ? domOk || dowOk : domOk && dowOk
+
+    if (secOk && minOk && hourOk && monOk && dayOk) {
       results.push(new Date(cursor))
     }
 

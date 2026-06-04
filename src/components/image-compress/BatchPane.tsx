@@ -167,14 +167,18 @@ export default function BatchPane({ getWorker }: BatchPaneProps) {
     }
     const zip = new JSZip()
     const ext = formatToExtension(params.format)
-    // 处理重名：name 计数后缀
-    const nameSeen = new Map<string, number>()
+    // 处理重名：保证 zip 内每个文件名唯一，冲突时追加 -2、-3… 后缀
+    const usedNames = new Set<string>()
     for (const it of ok) {
       const baseName = it.file.name.replace(/\.[^.]+$/, '') || 'image'
-      let final = `${baseName}-compressed.${ext}`
-      const n = (nameSeen.get(final) || 0) + 1
-      nameSeen.set(final, n)
-      if (n > 1) final = `${baseName}-compressed-${n}.${ext}`
+      const stem = `${baseName}-compressed`
+      let final = `${stem}.${ext}`
+      let n = 1
+      while (usedNames.has(final)) {
+        n++
+        final = `${stem}-${n}.${ext}`
+      }
+      usedNames.add(final)
       // result 必存在（filter 已保证）
       zip.file(final, it.result!.blob)
     }
