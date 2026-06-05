@@ -38,22 +38,40 @@ export default function ChatView() {
     }
   }, [currentSession?.messages, activeTab])
 
-  // 重新生成最后一条 assistant 消息
+  // 是否有流式生成进行中（重新生成与发送共享，避免并发写同一条消息）
+  const [isRegenerating, setIsRegenerating] = useState(false)
+  const regenAbortRef = useRef<AbortController | null>(null)
+
+  // 重新生成某条 assistant 消息：删除其后的所有消息，基于之前的历史重新生成
   const handleRegenerate = useCallback(async (messageId: string) => {
+    if (isRegenerating) return
     // 始终从 store 读取最新会话，避免闭包捕获旧的 currentSession（流式期间用户可能已发新消息）
-    const session = useSessionStore.getState().getCurrentSession()
+    const store = useSessionStore.getState()
+    const session = store.getCurrentSession()
     if (!session) return
     const sessionId = session.id
     const msgIndex = session.messages.findIndex((m) => m.id === messageId)
     if (msgIndex < 0) return
 
-    // 找到这条 assistant 消息之前的最后一条 user 消息
+    // 这条 assistant 消息之前的历史（作为请求上下文）
     const prevMessages = session.messages.slice(0, msgIndex)
+    // 删除这条消息之后的所有消息，避免重新生成后下文与旧回复脱节
+    const followingMessages = session.messages.slice(msgIndex + 1)
+    followingMessages.forEach((m) => store.deleteMessage(sessionId, m.id))
+
     const { protocol, getCurrentConfig: getConfig } = useConfigStore.getState()
     const { baseUrl, apiKey, model, systemPrompt } = getConfig()
+    if (!apiKey) {
+      toast.error('请先在设置中配置 API Key')
+      return
+    }
 
     // 清空当前 assistant 消息内容
     updateMessage(sessionId, messageId, '')
+
+    setIsRegenerating(true)
+    const controller = new AbortController()
+    regenAbortRef.current = controller
 
     try {
       await callApi({
@@ -64,6 +82,7 @@ export default function ChatView() {
         messages: prevMessages,
         systemPrompt: systemPrompt || undefined,
         streaming: true,
+        signal: controller.signal,
         onChunk: (chunk) => {
           const cur = useSessionStore.getState().sessions.find((s) => s.id === sessionId)
           const msg = cur?.messages.find((m) => m.id === messageId)
@@ -76,10 +95,20 @@ export default function ChatView() {
         },
       })
     } catch (error) {
-      // AbortError 不打扰用户；其他错误已在 onError 中提示
-      void error
+      if ((error as Error).name === 'AbortError') {
+        toast.info('已停止生成')
+      }
+    } finally {
+      setIsRegenerating(false)
+      regenAbortRef.current = null
+      // 中止/出错且无内容时删除该消息，避免残留空的「打字动画」气泡
+      const finalSession = useSessionStore.getState().sessions.find((s) => s.id === sessionId)
+      const placeholder = finalSession?.messages.find((m) => m.id === messageId)
+      if (placeholder && placeholder.content === '') {
+        useSessionStore.getState().deleteMessage(sessionId, messageId)
+      }
     }
-  }, [updateMessage])
+  }, [isRegenerating, updateMessage])
 
   const handleDelete = useCallback((messageId: string) => {
     if (!currentSession) return
@@ -135,7 +164,7 @@ export default function ChatView() {
                   <ChatMessage
                     key={msg.id}
                     message={msg}
-                    onRegenerate={msg.role === 'assistant' ? () => handleRegenerate(msg.id) : undefined}
+                    onRegenerate={msg.role === 'assistant' && !isRegenerating ? () => handleRegenerate(msg.id) : undefined}
                     onDelete={() => handleDelete(msg.id)}
                   />
                 ))}

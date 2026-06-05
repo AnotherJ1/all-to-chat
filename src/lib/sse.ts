@@ -18,10 +18,27 @@ export async function* parseSSEStream(
   const decoder = new TextDecoder()
   let buffer = ''
 
+  // 主动监听 abort：若服务端 hang 住不返回数据，cancel() 会让阻塞的 read() 立即 reject，
+  // 不必等到下一个 chunk 才能通过 signal.aborted 轮询发现中止。
+  const onAbort = () => {
+    reader.cancel().catch(() => {})
+  }
+  if (signal) {
+    if (signal.aborted) onAbort()
+    else signal.addEventListener('abort', onAbort, { once: true })
+  }
+
   try {
     while (true) {
       if (signal?.aborted) break
-      const { done, value } = await reader.read()
+      let done: boolean
+      let value: Uint8Array | undefined
+      try {
+        ({ done, value } = await reader.read())
+      } catch {
+        // reader 被 cancel（中止）时 read() 会 reject，正常退出循环
+        break
+      }
       if (done) break
 
       buffer += decoder.decode(value, { stream: true })
@@ -48,6 +65,7 @@ export async function* parseSSEStream(
       }
     }
   } finally {
+    if (signal) signal.removeEventListener('abort', onAbort)
     try {
       reader.releaseLock()
     } catch {

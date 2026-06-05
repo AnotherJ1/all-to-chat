@@ -31,7 +31,12 @@ export async function chatCompletion({
   if (systemPrompt) {
     allMessages.push({ role: 'system', content: systemPrompt })
   }
-  allMessages.push(...messages.map((m) => ({ role: m.role, content: m.content })))
+  // 历史里的 system 消息不透传，统一由 systemPrompt 控制（与 anthropic/gemini 行为一致）
+  allMessages.push(
+    ...messages
+      .filter((m) => m.role !== 'system')
+      .map((m) => ({ role: m.role, content: m.content }))
+  )
 
   try {
     const response = await fetch(url, {
@@ -67,15 +72,24 @@ export async function chatCompletion({
     let fullContent = ''
     for await (const event of parseSSEStream(response.body, signal)) {
       if (event.data === '[DONE]') break
+      let parsed: {
+        choices?: { delta?: { content?: string } }[]
+        error?: { message?: string }
+      }
       try {
-        const parsed = JSON.parse(event.data)
-        const content = parsed.choices?.[0]?.delta?.content
-        if (content) {
-          fullContent += content
-          onChunk?.(content)
-        }
+        parsed = JSON.parse(event.data)
       } catch {
-        // 忽略解析错误
+        // 非 JSON 数据忽略
+        continue
+      }
+      // 部分兼容网关在流式中途返回 error 对象（HTTP 仍为 200）
+      if (parsed.error) {
+        throw new Error(parsed.error.message || 'OpenAI 流式响应错误')
+      }
+      const content = parsed.choices?.[0]?.delta?.content
+      if (content) {
+        fullContent += content
+        onChunk?.(content)
       }
     }
 
@@ -98,9 +112,11 @@ export async function fetchModelList(baseUrl: string, apiKey: string): Promise<s
 
     for (const url of urls) {
       try {
+        // 每个请求 15s 超时，避免慢/挂起的代理导致「加载中」一直转
         const response = await fetch(url, {
           method: 'GET',
           headers: { Authorization: `Bearer ${apiKey}` },
+          signal: AbortSignal.timeout(15000),
         })
         if (!response.ok) continue
         const data = await response.json()

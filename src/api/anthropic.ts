@@ -77,18 +77,30 @@ export async function anthropicMessages({
 
     let fullContent = ''
     for await (const event of parseSSEStream(response.body, signal)) {
-      if (event.data === '[DONE]') break
+      let parsed: {
+        type?: string
+        delta?: { type?: string; text?: string }
+        error?: { message?: string }
+      }
       try {
-        const parsed = JSON.parse(event.data)
-        if (parsed.type === 'content_block_delta') {
-          const content = parsed.delta?.text
-          if (content) {
-            fullContent += content
-            onChunk?.(content)
-          }
-        }
+        parsed = JSON.parse(event.data)
       } catch {
-        // 忽略解析错误
+        // 非 JSON 数据（如心跳）忽略
+        continue
+      }
+      // Anthropic 流式即使 HTTP 200，中途出错也会发 error 事件
+      if (parsed.type === 'error' || parsed.error) {
+        throw new Error(parsed.error?.message || 'Anthropic 流式响应错误')
+      }
+      // 正常结束信号
+      if (parsed.type === 'message_stop') break
+      // 只取文本增量；thinking_delta 等其他增量类型跳过
+      if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta') {
+        const content = parsed.delta.text
+        if (content) {
+          fullContent += content
+          onChunk?.(content)
+        }
       }
     }
 

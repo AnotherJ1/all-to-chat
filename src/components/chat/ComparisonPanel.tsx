@@ -35,6 +35,8 @@ export default function ComparisonPanel() {
   const [isSending, setIsSending] = useState(false)
   const [modelLists, setModelLists] = useState<Map<string, string[]>>(new Map())
   const [loadingModels, setLoadingModels] = useState<Set<string>>(new Set())
+  // 每个模型当前选中的 API 配置 id（'_global' 表示全局配置）——受控 select
+  const [selectedConfigs, setSelectedConfigs] = useState<Map<string, string>>(new Map())
   const scrollRefs = useRef<Map<string, HTMLDivElement>>(new Map())
 
   const initRef = useRef(false)
@@ -90,6 +92,7 @@ export default function ComparisonPanel() {
         updateModel(modelId, { protocol: saved.protocol, baseUrl: saved.config.baseUrl, apiKey: saved.config.apiKey })
       }
     }
+    setSelectedConfigs((prev) => new Map(prev).set(modelId, configId))
     setModelLists((prev) => { const m = new Map(prev); m.delete(modelId); return m })
   }
 
@@ -342,7 +345,11 @@ export default function ComparisonPanel() {
                     onChange={(e) => handleConfigChange(modelItem.id, e.target.value)}
                     className="theme-select text-xs flex-1 min-w-0"
                     style={{ padding: '6px 32px 6px 10px', height: '32px' }}
-                    defaultValue="_global"
+                    value={(() => {
+                      const sel = selectedConfigs.get(modelItem.id) ?? '_global'
+                      // 选中的配置若已被删除，回退到全局配置
+                      return sel !== '_global' && !savedConfigs.some((c) => c.id === sel) ? '_global' : sel
+                    })()}
                     aria-label="选择 API 配置"
                   >
                     <option value="_global">全局配置</option>

@@ -14,7 +14,7 @@ export default function MessageInput() {
   const abortRef = useRef<AbortController | null>(null)
 
   const { protocol, getCurrentConfig } = useConfigStore()
-  const { getCurrentSession, addMessage, updateMessage, updateSessionTitle } = useSessionStore()
+  const { getCurrentSession, addMessage, updateMessage, updateSessionTitle, deleteMessage } = useSessionStore()
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -84,9 +84,10 @@ export default function MessageInput() {
           updateMessage(sessionId, assistantId, newContent)
         },
         onComplete: () => {
-          // 自动生成标题
-          if (currentSession.messages.length === 0 && currentSession.title === '新对话') {
-            const title = userInput.slice(0, 20) + (userInput.length > 20 ? '...' : '')
+          // 自动生成标题：从最新 store 状态判断是否首轮（此前为「新对话」且只有刚发的这一问一答）
+          const latest = useSessionStore.getState().sessions.find((s) => s.id === sessionId)
+          if (latest && latest.title === '新对话') {
+            const title = userInput.trim().slice(0, 20) + (userInput.trim().length > 20 ? '...' : '')
             updateSessionTitle(sessionId, title || '新对话')
           }
         },
@@ -102,6 +103,12 @@ export default function MessageInput() {
     } finally {
       setIsStreaming(false)
       abortRef.current = null
+      // 若 assistant 占位消息因中止/出错始终为空，删除它，避免界面残留「打字动画」
+      const finalSession = useSessionStore.getState().sessions.find((s) => s.id === sessionId)
+      const placeholder = finalSession?.messages.find((m) => m.id === assistantId)
+      if (placeholder && placeholder.content === '') {
+        deleteMessage(sessionId, assistantId)
+      }
     }
   }
 

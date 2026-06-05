@@ -15,6 +15,15 @@ interface GenerateContentOptions {
   onError?: (error: Error) => void
 }
 
+// 从 Gemini 响应中提取文本：content.parts 是数组，可能包含多段文本，需全部拼接
+function extractGeminiText(payload: unknown): string {
+  const parts = (payload as {
+    candidates?: { content?: { parts?: { text?: string }[] } }[]
+  })?.candidates?.[0]?.content?.parts
+  if (!Array.isArray(parts)) return ''
+  return parts.map((p) => p?.text ?? '').join('')
+}
+
 export async function generateContent({
   url,
   apiKey,
@@ -64,7 +73,7 @@ export async function generateContent({
 
     if (!streaming) {
       const data = await response.json()
-      const content = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+      const content = extractGeminiText(data)
       onChunk?.(content)
       onComplete?.()
       return content
@@ -77,13 +86,18 @@ export async function generateContent({
     for await (const event of parseSSEStream(response.body, signal)) {
       try {
         const parsed = JSON.parse(event.data)
-        const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text
+        // 流式 chunk 中也可能因安全策略等返回错误
+        if (parsed.error) {
+          throw new Error(parsed.error.message || 'Gemini 流式响应错误')
+        }
+        const text = extractGeminiText(parsed)
         if (text) {
           fullContent += text
           onChunk?.(text)
         }
-      } catch {
-        // 忽略解析错误
+      } catch (err) {
+        // JSON 解析失败忽略；但业务错误（上面 throw 的）要向上抛
+        if (err instanceof Error && err.message.includes('Gemini')) throw err
       }
     }
 
