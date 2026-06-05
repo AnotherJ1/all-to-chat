@@ -243,24 +243,24 @@ describe('Property 6: Store 数据持久化 round-trip', () => {
           id: 'img-001',
           prompt: '一只可爱的猫咪在阳光下睡觉',
           imageUrl: 'https://example.com/generated/cat.png',
-          provider: 'dalle',
-          model: 'dall-e-3',
+          model: 'gpt-image-2',
+          size: '1024x1024',
           createdAt: 1700000001000,
         },
         {
           id: 'img-002',
           prompt: 'A futuristic cityscape at sunset',
           imageUrl: 'https://example.com/generated/city.png',
-          provider: 'imagen',
-          model: 'imagen-3',
+          model: 'gpt-image-2',
+          size: '1536x1024',
           createdAt: 1700000002000,
         },
         {
           id: 'img-003',
           prompt: '抽象艺术，蓝色和紫色渐变',
           imageUrl: 'https://example.com/generated/abstract.png',
-          provider: 'flux',
-          model: 'flux-pro',
+          model: 'gpt-image-2',
+          size: '1024x1536',
           createdAt: 1700000003000,
         },
       ]
@@ -278,9 +278,9 @@ describe('Property 6: Store 数据持久化 round-trip', () => {
       expect(deserialized.state).toEqual(sampleState)
       expect(deserialized.state.records).toHaveLength(3)
       expect(deserialized.state.records[0].prompt).toBe('一只可爱的猫咪在阳光下睡觉')
-      expect(deserialized.state.records[0].provider).toBe('dalle')
-      expect(deserialized.state.records[1].provider).toBe('imagen')
-      expect(deserialized.state.records[2].provider).toBe('flux')
+      expect(deserialized.state.records[0].model).toBe('gpt-image-2')
+      expect(deserialized.state.records[1].size).toBe('1536x1024')
+      expect(deserialized.state.records[2].size).toBe('1024x1536')
     })
 
     it('imageHistoryStore 空记录列表应正确 round-trip', () => {

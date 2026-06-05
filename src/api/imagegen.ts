@@ -1,4 +1,5 @@
-// 图片生成API - 支持 DALL-E/OpenAI兼容, Imagen, Flux
+// 图片生成 API —— 仅支持 OpenAI GPT Image 2 协议（/v1/images/generations）
+// 兼容 OpenAI 官方及 NewAPI / OneAPI / CLIProxyAPI 等 OpenAI 兼容代理
 
 export interface ImageGenerationResult {
   success: boolean
@@ -6,19 +7,26 @@ export interface ImageGenerationResult {
   error?: string
 }
 
+/** GPT Image 2 默认模型名 */
+export const DEFAULT_IMAGE_MODEL = 'gpt-image-2'
+
+/** 支持的图片尺寸（gpt-image 系列） */
+export const IMAGE_SIZES = ['1024x1024', '1536x1024', '1024x1536', 'auto'] as const
+export type ImageSize = (typeof IMAGE_SIZES)[number]
+
 /**
- * 解析图片生成响应(OpenAI 兼容格式)
- * 支持返回 url 或 b64_json,也处理代理返回的 message 错误
+ * 解析图片生成响应（OpenAI Images 格式）
+ * gpt-image 系列默认返回 b64_json；部分代理会改为返回可访问的 url
  */
 function parseImageResponse(data: Record<string, unknown>): ImageGenerationResult {
-  // 代理可能返回 message 字段表示错误(如内容策略拒绝)
+  // 代理可能返回 message 字段表示错误（如内容策略拒绝）
   if (!data.data || !Array.isArray(data.data) || data.data.length === 0) {
     const msg = (data as { message?: string }).message
     return { success: false, error: msg || '未返回图片数据' }
   }
 
   const item = (data.data as Record<string, string>[])[0]
-  // 优先使用 url(代理已存储的图片地址),其次用 b64_json
+  // 优先使用 url（代理已存储的图片地址），其次用 b64_json
   if (item?.url) {
     return { success: true, imageUrl: item.url }
   }
@@ -28,11 +36,23 @@ function parseImageResponse(data: Record<string, unknown>): ImageGenerationResul
   return { success: false, error: '未返回图片数据' }
 }
 
+/** 从错误响应中提取可读的错误信息 */
+async function extractError(response: Response): Promise<string> {
+  const errorData = await response.json().catch(() => ({}))
+  return (
+    (errorData as { error?: { message?: string }; detail?: { error?: string } }).error?.message ||
+    (errorData as { detail?: { error?: string } }).detail?.error ||
+    `HTTP ${response.status}`
+  )
+}
+
 /**
- * 通过 Chat Completions API 生成图片 (modalities 方式)
- * 适用于 CLIProxyAPI 等通过 OAuth 代理的服务
- * 这些服务不直接支持 /v1/images/generations，但支持 chat/completions
- * 通过 modalities: ["text", "image"] 让模型生成图片
+ * 通过 Chat Completions API 生成图片（modalities 方式）
+ * 适用于 CLIProxyAPI 等通过 OAuth 代理的服务：它们不直接支持
+ * /v1/images/generations，但支持 chat/completions + modalities:["text","image"]。
+ *
+ * 注意：此处保持调用方传入的图片模型不变（不再改写成 gpt-4o），
+ * 由代理自行决定如何路由到底层图片模型。
  */
 async function generateWithChatCompletions(
   baseUrl: string,
@@ -42,8 +62,6 @@ async function generateWithChatCompletions(
   signal?: AbortSignal
 ): Promise<ImageGenerationResult> {
   const base = baseUrl.replace(/\/$/, '')
-  // 使用支持图片生成的模型
-  const chatModel = /^gpt-image/i.test(model) ? 'gpt-4o' : (model || 'gpt-4o')
   const response = await fetch(`${base}/v1/chat/completions`, {
     method: 'POST',
     headers: {
@@ -51,9 +69,12 @@ async function generateWithChatCompletions(
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: chatModel,
+      model: model || DEFAULT_IMAGE_MODEL,
       messages: [
-        { role: 'user', content: `Please generate an image based on the following description. Only generate the image, no text explanation needed.\n\n${prompt}` }
+        {
+          role: 'user',
+          content: `Please generate an image based on the following description. Only generate the image, no text explanation needed.\n\n${prompt}`,
+        },
       ],
       modalities: ['text', 'image'],
       stream: false,
@@ -62,19 +83,23 @@ async function generateWithChatCompletions(
   })
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}))
-    const errMsg = (errorData as { error?: { message?: string }; detail?: { error?: string } }).error?.message
-      || (errorData as { detail?: { error?: string } }).detail?.error
-      || `HTTP ${response.status}`
-    return { success: false, error: errMsg }
+    return { success: false, error: await extractError(response) }
   }
 
-  const data = await response.json() as Record<string, unknown>
-  // 解析 chat completions 响应中的图片
-  const choices = (data as { choices?: Array<{ message?: { images?: Array<{ type?: string; image_url?: { url?: string } }>; content?: string } }> }).choices
+  const data = (await response.json()) as Record<string, unknown>
+  const choices = (
+    data as {
+      choices?: Array<{
+        message?: {
+          images?: Array<{ type?: string; image_url?: { url?: string } }>
+          content?: string
+        }
+      }>
+    }
+  ).choices
   if (choices && choices.length > 0) {
     const message = choices[0].message
-    // 方式1: images 数组 (Vercel AI Gateway / 某些代理的格式)
+    // 方式1: images 数组（Vercel AI Gateway / 某些代理的格式）
     if (message?.images && Array.isArray(message.images)) {
       for (const img of message.images) {
         if (img.type === 'image_url' && img.image_url?.url) {
@@ -82,7 +107,7 @@ async function generateWithChatCompletions(
         }
       }
     }
-    // 方式2: content 中包含 base64 图片 (某些代理直接在 content 中返回)
+    // 方式2: content 中直接包含 base64 图片
     if (message?.content && message.content.startsWith('data:image')) {
       return { success: true, imageUrl: message.content }
     }
@@ -90,27 +115,31 @@ async function generateWithChatCompletions(
   return { success: false, error: '模型未返回图片，该代理可能不支持图片生成' }
 }
 
-// DALL-E / OpenAI 兼容图片生成
-// 适用于: OpenAI 官方、NewAPI/OneAPI 代理、CLIProxyAPI 等
-// 如果 /v1/images/generations 返回 tool_choice 错误，回退到 chat/completions + modalities 方式
-async function generateWithDalle(
+/**
+ * GPT Image 2 图片生成
+ * 走标准 /v1/images/generations；若代理内部转换失败（tool_choice / image_generation 报错），
+ * 回退到 chat/completions + modalities 方式（保持同一图片模型）。
+ *
+ * 注意：gpt-image 系列默认返回 b64_json 且不接受 response_format 参数，
+ * 因此请求体保持最简（model/prompt/n/size），不要附加 response_format。
+ */
+export async function generateImage(
   baseUrl: string,
   apiKey: string,
   model: string,
   prompt: string,
+  size: ImageSize = '1024x1024',
   signal?: AbortSignal
 ): Promise<ImageGenerationResult> {
   try {
     const base = baseUrl.replace(/\/$/, '')
-    const actualModel = model || 'gpt-image-2'
+    const actualModel = model || DEFAULT_IMAGE_MODEL
 
-    // 对于 CLIProxyAPI 等代理，发送最简化的请求体
-    // 只包含 model, prompt, n, size 即可，不要加额外参数
     const body: Record<string, unknown> = {
       model: actualModel,
       prompt,
       n: 1,
-      size: '1024x1024',
+      size,
     }
 
     const response = await fetch(`${base}/v1/images/generations`, {
@@ -124,138 +153,18 @@ async function generateWithDalle(
     })
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      const errMsg = (errorData as { error?: { message?: string }; detail?: { error?: string } }).error?.message
-        || (errorData as { detail?: { error?: string } }).detail?.error
-        || `HTTP ${response.status}`
-
-      // CLIProxyAPI 等代理内部转换失败时，回退到 chat/completions + modalities 方式
+      const errMsg = await extractError(response)
+      // 代理内部转换失败时，回退到 chat/completions + modalities 方式
       if (errMsg.includes('tool_choice') || errMsg.includes('image_generation')) {
         return generateWithChatCompletions(base, apiKey, actualModel, prompt, signal)
       }
-
       return { success: false, error: errMsg }
     }
 
     const data = await response.json()
     return parseImageResponse(data)
   } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') throw error
     return { success: false, error: error instanceof Error ? error.message : '网络错误' }
-  }
-}
-
-// Google Imagen 图片生成
-async function generateWithImagen(
-  baseUrl: string,
-  apiKey: string,
-  prompt: string,
-  signal?: AbortSignal
-): Promise<ImageGenerationResult> {
-  try {
-    const endpoint = baseUrl.includes('vertexai')
-      ? `${baseUrl}/images:generate`
-      : `https://generativelanguage.googleapis.com/v1beta/models/imagen-3-generate:generateImage`
-
-    const response = await fetch(`${endpoint}?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        prompt,
-        numberOfImages: 1,
-        aspectRatio: '1:1',
-        personGeneration: 'dont_allow',
-      }),
-      signal,
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      return { success: false, error: (errorData as { error?: { message?: string } }).error?.message || `HTTP ${response.status}` }
-    }
-
-    const data = await response.json()
-    const imageData = data.images?.[0]?.image?.bytesBase64Encoded
-    if (imageData) {
-      return { success: true, imageUrl: `data:image/png;base64,${imageData}` }
-    }
-    return { success: false, error: '未返回图片数据' }
-  } catch (error) {
-    return { success: false, error: error instanceof Error ? error.message : '网络错误' }
-  }
-}
-
-// Flux 图片生成 (OpenAI 兼容端点)
-async function generateWithFlux(
-  baseUrl: string,
-  apiKey: string,
-  model: string,
-  prompt: string,
-  signal?: AbortSignal
-): Promise<ImageGenerationResult> {
-  try {
-    const base = baseUrl.replace(/\/$/, '')
-    const response = await fetch(`${base}/v1/images/generations`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: model || 'flux-pro',
-        prompt,
-        n: 1,
-        size: '1024x1024',
-        response_format: 'b64_json',
-      }),
-      signal,
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      const errMsg = (errorData as { error?: { message?: string }; detail?: { error?: string } }).error?.message
-        || (errorData as { detail?: { error?: string } }).detail?.error
-        || `HTTP ${response.status}`
-      return { success: false, error: errMsg }
-    }
-
-    const data = await response.json()
-    return parseImageResponse(data)
-  } catch (error) {
-    return { success: false, error: error instanceof Error ? error.message : '网络错误' }
-  }
-}
-
-// 主入口函数
-export async function generateImage(
-  baseUrl: string,
-  apiKey: string,
-  model: string,
-  prompt: string,
-  provider: 'dalle' | 'imagen' | 'flux',
-  signal?: AbortSignal
-): Promise<ImageGenerationResult> {
-  switch (provider) {
-    case 'dalle':
-      return generateWithDalle(baseUrl, apiKey, model, prompt, signal)
-    case 'imagen':
-      return generateWithImagen(baseUrl, apiKey, prompt, signal)
-    case 'flux':
-      return generateWithFlux(baseUrl, apiKey, model, prompt, signal)
-    default:
-      return { success: false, error: `不支持的提供商: ${provider}` }
-  }
-}
-
-// 获取提供商默认模型
-export function getDefaultModel(provider: 'dalle' | 'imagen' | 'flux'): string {
-  switch (provider) {
-    case 'dalle':
-      return 'gpt-image-2'
-    case 'imagen':
-      return 'imagen-3'
-    case 'flux':
-      return 'flux-pro'
-    default:
-      return 'gpt-image-2'
   }
 }

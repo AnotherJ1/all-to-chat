@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Sidebar from '../components/chat/Sidebar'
 import ChatView from '../components/chat/ChatView'
 import SettingsModal from '../components/common/SettingsModal'
@@ -12,6 +13,7 @@ import { IconSettings, IconMenu } from '../components/common/Icons'
  * 移动端：Sidebar 转为抽屉，顶部增加汉堡菜单
  */
 export default function ChatPage() {
+  const navigate = useNavigate()
   const createSession = useSessionStore((s) => s.createSession)
   // 桌面侧栏折叠状态
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -47,12 +49,21 @@ export default function ChatPage() {
         >
           <IconMenu className="w-5 h-5" style={{ color: 'var(--text-primary)' }} />
         </button>
-        <span
-          className="text-sm font-bold"
-          style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-heading)' }}
+        <button
+          onClick={() => navigate('/')}
+          className="text-sm font-bold cursor-pointer"
+          style={{
+            color: 'var(--text-primary)',
+            fontFamily: 'var(--font-heading)',
+            background: 'transparent',
+            border: 'none',
+            padding: '4px 8px',
+          }}
+          title="返回首页"
+          aria-label="返回首页"
         >
           AI 聊天
-        </span>
+        </button>
         <button
           onClick={() => setShowSettings(true)}
           className="theme-btn"

@@ -15,7 +15,7 @@ import { IconChat, IconCompare, IconImage, IconFolder } from '../common/Icons'
 const TABS: { key: ChatTab; label: string; Icon: React.ComponentType<{ className?: string }>; disabled?: boolean }[] = [
   { key: 'chat', label: '对话', Icon: IconChat },
   { key: 'compare', label: '多模型对比', Icon: IconCompare },
-  { key: 'image', label: '图片生成', Icon: IconImage, disabled: true },
+  { key: 'image', label: '图片生成', Icon: IconImage },
   { key: 'sessions', label: '会话管理', Icon: IconFolder },
 ]
 

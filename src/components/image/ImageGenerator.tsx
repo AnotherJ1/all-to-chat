@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useConfigStore } from '../../stores/configStore'
 import { useImageHistoryStore } from '../../stores/imageHistoryStore'
-import { generateImage, getDefaultModel } from '../../api/imagegen'
+import { generateImage, DEFAULT_IMAGE_MODEL, IMAGE_SIZES, type ImageSize } from '../../api/imagegen'
 import { fetchModelList } from '../../api/openai'
 import { toast } from '../../stores/toastStore'
 import { IconDownload, IconTrash, IconArrowLeft, IconImage, IconHistory } from '../common/Icons'
@@ -24,8 +24,8 @@ export default function ImageGenerator() {
   const [customBaseUrl, setCustomBaseUrl] = useState(globalConfig.baseUrl)
   const [customApiKey, setCustomApiKey] = useState(globalConfig.apiKey)
   const [prompt, setPrompt] = useState('')
-  const [provider, setProvider] = useState<'dalle' | 'imagen' | 'flux'>('dalle')
-  const [model, setModel] = useState('')
+  const [model, setModel] = useState(DEFAULT_IMAGE_MODEL)
+  const [size, setSize] = useState<ImageSize>('1024x1024')
   const [isGenerating, setIsGenerating] = useState(false)
   const [currentImage, setCurrentImage] = useState<string | null>(null)
   const [useGlobalConfig, setUseGlobalConfig] = useState(true)
@@ -48,11 +48,6 @@ export default function ImageGenerator() {
       if (generateTimeoutRef.current) clearTimeout(generateTimeoutRef.current)
     }
   }, [])
-
-  const handleProviderChange = (newProvider: 'dalle' | 'imagen' | 'flux') => {
-    setProvider(newProvider)
-    setCurrentImage(null)
-  }
 
   const handleLoadSavedConfig = (configId: string) => {
     const saved = savedConfigs.find((c) => c.id === configId)
@@ -97,11 +92,11 @@ export default function ImageGenerator() {
     generateTimeoutRef.current = timeout
 
     try {
-      const result = await generateImage(activeBaseUrl, activeApiKey, model, prompt, provider, controller.signal)
+      const result = await generateImage(activeBaseUrl, activeApiKey, model, prompt, size, controller.signal)
       if (unmountedRef.current) return
       if (result.success && result.imageUrl) {
         setCurrentImage(result.imageUrl)
-        addRecord({ prompt, imageUrl: result.imageUrl, provider, model })
+        addRecord({ prompt, imageUrl: result.imageUrl, model: model || DEFAULT_IMAGE_MODEL, size })
         toast.success('图片生成成功')
       } else {
         toast.error(result.error || '生成失败')
@@ -193,25 +188,23 @@ export default function ImageGenerator() {
         )}
       </div>
 
-      {/* 提供商选择 */}
+      {/* 尺寸选择 */}
       <div className="mb-4">
-        <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>提供商</label>
+        <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>尺寸</label>
         <div className="flex flex-wrap gap-2">
-          {(['dalle', 'imagen', 'flux'] as const).map((p) => (
+          {IMAGE_SIZES.map((s) => (
             <button
-              key={p}
-              onClick={() => handleProviderChange(p)}
-              className={provider === p ? 'theme-btn theme-btn-primary' : 'theme-btn'}
+              key={s}
+              onClick={() => setSize(s)}
+              className={size === s ? 'theme-btn theme-btn-primary' : 'theme-btn'}
               style={{ padding: '6px 12px', fontSize: '13px' }}
             >
-              {p === 'dalle' ? 'OpenAI' : p === 'imagen' ? 'Imagen' : 'Flux'}
+              {s === 'auto' ? '自动' : s}
             </button>
           ))}
         </div>
         <p className="text-xs mt-2 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-          {provider === 'dalle' && '适用于 OpenAI 兼容 API（含 CLIProxyAPI 等代理服务）。请点击「获取模型」选择可用的图片模型。'}
-          {provider === 'imagen' && '适用于 Google AI 原生 API。需要 Google API Key。'}
-          {provider === 'flux' && '适用于 OpenAI 兼容端点（Replicate/代理）。请点击「获取模型」选择可用的 Flux 模型。'}
+          基于 OpenAI GPT Image 2 协议（/v1/images/generations），适用于 OpenAI 官方及 OneAPI / NewAPI / CLIProxyAPI 等兼容代理。
         </p>
       </div>
 
@@ -225,7 +218,7 @@ export default function ImageGenerator() {
               value={model}
               onChange={(e) => setModel(e.target.value)}
               onFocus={() => imageModels.length > 0 && setShowImageModelList(true)}
-              placeholder={`如 ${getDefaultModel(provider)}`}
+              placeholder={`如 ${DEFAULT_IMAGE_MODEL}`}
               className="theme-input"
             />
             {showImageModelList && imageModels.length > 0 && (
@@ -344,10 +337,11 @@ export default function ImageGenerator() {
                 <div className="mt-2 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
                     <span
-                      className="text-xs px-1.5 py-0.5 flex-shrink-0"
-                      style={{ background: 'color-mix(in srgb, var(--accent-1) 15%, transparent)', color: 'var(--accent-1)', borderRadius: 'var(--radius-sm)' }}
+                      className="text-xs px-1.5 py-0.5 flex-shrink-0 truncate"
+                      style={{ background: 'color-mix(in srgb, var(--accent-1) 15%, transparent)', color: 'var(--accent-1)', borderRadius: 'var(--radius-sm)', maxWidth: '120px' }}
+                      title={record.model}
                     >
-                      {record.provider.toUpperCase()}
+                      {record.model}
                     </span>
                     <span className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>
                       {format(record.createdAt, 'MM/dd HH:mm', { locale: zhCN })}

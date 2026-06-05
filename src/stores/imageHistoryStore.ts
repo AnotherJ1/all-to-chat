@@ -7,8 +7,8 @@ export interface ImageRecord {
   id: string
   prompt: string
   imageUrl: string
-  provider: 'dalle' | 'imagen' | 'flux'
   model: string
+  size?: string
   createdAt: number
 }
 
