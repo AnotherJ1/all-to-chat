@@ -118,8 +118,9 @@ describe('ImageGenerator', () => {
     fireEvent.click(screen.getByRole('button', { name: '海报' }))
 
     expect(promptInput.value).toContain('一只橘猫')
-    expect(promptInput.value).toContain('海报设计')
-    expect(promptInput.value).toContain('清晰的信息层级')
+    expect(promptInput.value).toContain('电影级主视觉海报')
+    expect(promptInput.value).toContain('标题区预留清晰留白')
+    expect(promptInput.value).toContain('印刷级细节')
   })
 
   it('switches the mobile tab to preview after successful generation', async () => {
