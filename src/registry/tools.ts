@@ -23,12 +23,11 @@ export const toolRegistry: ToolMeta[] = [
   {
     id: 'image-gen',
     name: '图片生成',
-    description: '文生图，支持 DALL-E / Imagen / Flux',
+    description: '文生图，基于 GPT Image 2，兼容 OneAPI / NewAPI / CLIProxyAPI',
     icon: IconImage,
     route: '/image',
     component: lazy(() => import('../pages/ImagePage')),
     category: 'ai',
-    disabled: true,
   },
   {
     id: 'json-formatter',

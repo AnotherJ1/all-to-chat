@@ -116,13 +116,28 @@ export default function ImageGenerator() {
     }
   }
 
-  const handleDownload = (imageUrl: string) => {
+  const triggerDownload = (href: string, revoke = false) => {
+    const link = document.createElement('a')
+    link.href = href
+    link.download = `generated-image-${Date.now()}.png`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    if (revoke) URL.revokeObjectURL(href)
+  }
+
+  const handleDownload = async (imageUrl: string) => {
     if (imageUrl.startsWith('data:')) {
-      const link = document.createElement('a')
-      link.href = imageUrl
-      link.download = `generated-image-${Date.now()}.png`
-      link.click()
-    } else {
+      triggerDownload(imageUrl)
+      return
+    }
+    // 远程图片：优先 fetch 成 blob 真正下载；跨域失败则回退新开标签
+    try {
+      const res = await fetch(imageUrl)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const blobUrl = URL.createObjectURL(await res.blob())
+      triggerDownload(blobUrl, true)
+    } catch {
       window.open(imageUrl, '_blank')
     }
   }

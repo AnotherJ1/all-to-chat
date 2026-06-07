@@ -38,12 +38,22 @@ function parseImageResponse(data: Record<string, unknown>): ImageGenerationResul
 
 /** 从错误响应中提取可读的错误信息 */
 async function extractError(response: Response): Promise<string> {
-  const errorData = await response.json().catch(() => ({}))
-  return (
-    (errorData as { error?: { message?: string }; detail?: { error?: string } }).error?.message ||
-    (errorData as { detail?: { error?: string } }).detail?.error ||
-    `HTTP ${response.status}`
-  )
+  const errorData = (await response.json().catch(() => ({}))) as {
+    error?: string | { message?: string }
+    detail?: string | { error?: string }
+    message?: string
+  }
+  // error 可能是对象（OpenAI 官方）或字符串（部分 NewAPI 风格代理）
+  const err = errorData.error
+  if (typeof err === 'string' && err) return err
+  if (err && typeof err === 'object' && err.message) return err.message
+  // detail 可能是对象或字符串
+  const detail = errorData.detail
+  if (typeof detail === 'string' && detail) return detail
+  if (detail && typeof detail === 'object' && detail.error) return detail.error
+  // 顶层 message
+  if (errorData.message) return errorData.message
+  return `HTTP ${response.status}`
 }
 
 /**
