@@ -22,6 +22,16 @@ import { zhCN } from 'date-fns/locale'
 
 type MobileTab = 'generate' | 'history'
 type GenMode = 'generate' | 'edit'
+type SelectedImageSize = ImageSize | 'custom'
+
+const PROMPT_PRESETS = [
+  { label: '人像', prompt: '人像摄影，真实自然的面部细节，柔和光线，浅景深，高级摄影质感' },
+  { label: '海报', prompt: '海报设计，醒目的主标题，清晰的信息层级，高级排版，商业摄影质感' },
+  { label: '宣传图', prompt: '宣传图设计，突出核心卖点，视觉冲击力强，品牌感统一，适合社交媒体传播' },
+  { label: '广告', prompt: '广告创意图，产品主体突出，强烈记忆点，精致布光，高转化率商业视觉' },
+  { label: '活动', prompt: '活动主视觉，热烈氛围，明确主题，适合线上线下活动宣传，画面层次丰富' },
+  { label: '证件', prompt: '证件照风格，正面半身，纯色背景，光线均匀，五官清晰，自然真实' },
+] as const
 
 /** 把本地文件读成 data URL（base64），供编辑端点的 image_url 使用 */
 function fileToDataUrl(file: File): Promise<string> {
@@ -55,7 +65,9 @@ export default function ImageGenerator() {
   const [customApiKey, setCustomApiKey] = useState(globalConfig.apiKey)
   const [prompt, setPrompt] = useState('')
   const [model, setModel] = useState(DEFAULT_IMAGE_MODEL)
-  const [size, setSize] = useState<ImageSize>('auto')
+  const [size, setSize] = useState<SelectedImageSize>('auto')
+  const [customWidth, setCustomWidth] = useState('')
+  const [customHeight, setCustomHeight] = useState('')
   const [quality, setQuality] = useState<ImageQuality>('auto')
   const [outputFormat, setOutputFormat] = useState<ImageFormat>('png')
   const [mode, setMode] = useState<GenMode>('generate')
@@ -115,6 +127,21 @@ export default function ImageGenerator() {
     }
   }
 
+  const appendPromptPreset = (presetPrompt: string) => {
+    setPrompt((prev) => (prev.trim() ? `${prev.trimEnd()}，${presetPrompt}` : presetPrompt))
+  }
+
+  const getEffectiveSize = (): ImageSize | null => {
+    if (size !== 'custom') return size
+
+    const width = customWidth.trim()
+    const height = customHeight.trim()
+    if (!/^\d+$/.test(width) || !/^\d+$/.test(height) || Number(width) <= 0 || Number(height) <= 0) {
+      return null
+    }
+    return `${width}x${height}` as ImageSize
+  }
+
   // 选择本地图片加入编辑输入
   const handlePickFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return
@@ -145,6 +172,11 @@ export default function ImageGenerator() {
       toast.error('编辑模式请至少添加一张输入图片')
       return
     }
+    const effectiveSize = getEffectiveSize()
+    if (!effectiveSize) {
+      toast.error('请输入有效的自定义宽高')
+      return
+    }
 
     setIsGenerating(true)
     setElapsedSeconds(0)
@@ -166,13 +198,14 @@ export default function ImageGenerator() {
     try {
       const result =
         mode === 'edit'
-          ? await editImage(activeBaseUrl, activeApiKey, model, prompt, inputImages, size, options, controller.signal)
-          : await generateImage(activeBaseUrl, activeApiKey, model, prompt, size, options, controller.signal)
+          ? await editImage(activeBaseUrl, activeApiKey, model, prompt, inputImages, effectiveSize, options, controller.signal)
+          : await generateImage(activeBaseUrl, activeApiKey, model, prompt, effectiveSize, options, controller.signal)
       if (unmountedRef.current) return
       if (result.success && result.imageUrl) {
         setCurrentImage(result.imageUrl)
+        setMobileTab('history')
         const tooLargeForHistory = result.imageUrl.startsWith('data:') && result.imageUrl.length > MAX_PERSISTED_IMAGE_URL_LENGTH
-        addRecord({ prompt, imageUrl: result.imageUrl, model: model || DEFAULT_IMAGE_MODEL, size, mode })
+        addRecord({ prompt, imageUrl: result.imageUrl, model: model || DEFAULT_IMAGE_MODEL, size: effectiveSize, mode })
         if (tooLargeForHistory) {
           toast.warning(`${mode === 'edit' ? '图片编辑成功' : '图片生成成功'}，但图片较大未保存到历史，请及时下载`)
         } else {
@@ -381,7 +414,46 @@ export default function ImageGenerator() {
               {s === 'auto' ? '自动' : s}
             </button>
           ))}
+          <button
+            onClick={() => setSize('custom')}
+            className={size === 'custom' ? 'theme-btn theme-btn-primary' : 'theme-btn'}
+            style={{ padding: '6px 12px', fontSize: '13px' }}
+          >
+            自定义
+          </button>
         </div>
+        {size === 'custom' && (
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <label className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              宽度
+              <input
+                aria-label="自定义宽度"
+                type="number"
+                min="1"
+                inputMode="numeric"
+                value={customWidth}
+                onChange={(e) => setCustomWidth(e.target.value)}
+                placeholder="如 1280"
+                className="theme-input mt-1 text-sm"
+                style={{ padding: '8px 10px' }}
+              />
+            </label>
+            <label className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              高度
+              <input
+                aria-label="自定义高度"
+                type="number"
+                min="1"
+                inputMode="numeric"
+                value={customHeight}
+                onChange={(e) => setCustomHeight(e.target.value)}
+                placeholder="如 720"
+                className="theme-input mt-1 text-sm"
+                style={{ padding: '8px 10px' }}
+              />
+            </label>
+          </div>
+        )}
         <p className="text-xs mt-2 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
           基于 OpenAI GPT Image 2 协议，适用于 OpenAI 官方及 OneAPI / NewAPI / CLIProxyAPI 等兼容代理。
         </p>
@@ -471,6 +543,19 @@ export default function ImageGenerator() {
       {/* Prompt 输入 */}
       <div className="mb-4" onClick={() => setShowImageModelList(false)}>
         <label className="block text-sm font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>描述</label>
+        <div className="flex flex-wrap gap-2 mb-2">
+          {PROMPT_PRESETS.map((preset) => (
+            <button
+              key={preset.label}
+              type="button"
+              onClick={() => appendPromptPreset(preset.prompt)}
+              className="theme-btn"
+              style={{ padding: '4px 10px', fontSize: '12px' }}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
@@ -518,106 +603,136 @@ export default function ImageGenerator() {
         </div>
       )}
 
-      {/* 当前图片预览 */}
-      {currentImage && (
-        <div className="mt-4 relative">
-          <img
-            src={currentImage}
-            alt="Generated"
-            className="w-full"
-            style={{ borderRadius: 'var(--radius-sm)', border: 'var(--border-width) solid var(--border-color)' }}
-          />
-          <button
-            onClick={() => handleDownload(currentImage)}
-            className="absolute bottom-2 right-2 theme-btn"
-            style={{ padding: '4px 10px', fontSize: '12px', background: 'rgba(0,0,0,0.7)', color: '#fff' }}
-          >
-            <IconDownload className="w-3.5 h-3.5" />
-            下载
-          </button>
-        </div>
-      )}
     </div>
   )
 
-  // ───────── 渲染：右侧历史记录 ─────────
-  const historyPanel = (
+  // ───────── 渲染：右侧当前预览 + 可编辑历史 ─────────
+  const previewPanel = (
     <div className="flex-1 p-4 md:p-6 overflow-y-auto h-full min-h-0">
       <div className="flex justify-between items-center mb-4 gap-3">
-        <h3 className="text-lg font-bold truncate" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-heading)' }}>生成历史</h3>
+        <h3 className="text-lg font-bold truncate" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-heading)' }}>当前预览</h3>
         {records.length > 0 && (
           <button
             onClick={clearHistory}
             className="text-sm cursor-pointer flex-shrink-0"
             style={{ color: '#f87171', transition: 'var(--transition)' }}
           >
-            清空
+            清空历史
           </button>
         )}
       </div>
 
-      {records.length === 0 ? (
-        <div className="flex items-center justify-center h-64" style={{ color: 'var(--text-muted)' }}>
-          暂无生成记录
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          {records.map((record) => (
-            <div
-              key={record.id}
-              className="theme-card overflow-hidden group"
-              style={{ padding: 0 }}
-            >
-              <div
-                className="aspect-square cursor-pointer overflow-hidden"
-                onClick={() => handleDownload(record.imageUrl)}
+      <div className="theme-card mb-5" style={{ minHeight: '320px' }}>
+        {currentImage ? (
+          <div className="space-y-3">
+            <img
+              src={currentImage}
+              alt="Generated"
+              className="w-full max-h-[70vh] object-contain"
+              style={{ borderRadius: 'var(--radius-sm)', border: 'var(--border-width) solid var(--border-color)' }}
+            />
+            <div className="flex flex-wrap gap-2 justify-end">
+              <button
+                onClick={() => handleDownload(currentImage)}
+                className="theme-btn theme-btn-primary"
+                style={{ padding: '6px 12px', fontSize: '13px' }}
               >
-                <img
-                  src={record.imageUrl}
-                  alt={record.prompt}
-                  className="w-full h-full object-cover"
-                  style={{ transition: 'transform 0.3s' }}
-                />
-              </div>
-              <div className="p-3">
-                <p className="text-sm line-clamp-2" style={{ color: 'var(--text-primary)' }}>{record.prompt}</p>
-                <div className="mt-2 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span
-                      className="text-xs px-1.5 py-0.5 flex-shrink-0 truncate"
-                      style={{ background: 'color-mix(in srgb, var(--accent-1) 15%, transparent)', color: 'var(--accent-1)', borderRadius: 'var(--radius-sm)', maxWidth: '120px' }}
-                      title={record.model}
-                    >
-                      {record.model}
-                    </span>
-                    <span className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>
-                      {format(record.createdAt, 'MM/dd HH:mm', { locale: zhCN })}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <button
-                      onClick={() => handleEditFromHistory(record.imageUrl, record.prompt)}
-                      className="cursor-pointer h-7 px-2 flex items-center justify-center text-xs"
-                      style={{ color: 'var(--accent-1)', transition: 'var(--transition)', borderRadius: 'var(--radius-sm)', background: 'color-mix(in srgb, var(--accent-1) 12%, transparent)' }}
-                      title="基于此图编辑"
-                      aria-label="基于此图编辑"
-                    >
-                      编辑
-                    </button>
-                    <button
-                      onClick={() => deleteRecord(record.id)}
-                      className="cursor-pointer w-7 h-7 flex items-center justify-center"
-                      style={{ color: 'var(--text-muted)', transition: 'var(--transition)', borderRadius: 'var(--radius-sm)' }}
-                      title="删除"
-                      aria-label="删除记录"
-                    >
-                      <IconTrash className="w-3.5 h-3.5" />
-                    </button>
+                <IconDownload className="w-4 h-4" />
+                下载
+              </button>
+              <button
+                onClick={() => handleEditFromHistory(currentImage, prompt)}
+                className="theme-btn"
+                style={{ padding: '6px 12px', fontSize: '13px' }}
+              >
+                基于此图编辑
+              </button>
+            </div>
+          </div>
+        ) : isGenerating ? (
+          <div className="flex flex-col items-center justify-center h-72 text-center gap-3">
+            <div
+              className="w-8 h-8 rounded-full animate-spin"
+              style={{ border: '4px solid color-mix(in srgb, var(--accent-1) 25%, transparent)', borderTopColor: 'var(--accent-1)' }}
+              aria-hidden="true"
+            />
+            <div className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+              {mode === 'edit' ? '正在编辑图片' : '正在生成图片'} · 已用时 {formatElapsed(elapsedSeconds)}
+            </div>
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+              请求仍在处理中，生成完成后会在这里显示大图。
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-72 text-center gap-2" style={{ color: 'var(--text-muted)' }}>
+            <IconImage className="w-10 h-10" />
+            <p>生成完成后，图片会显示在这里。</p>
+            <p className="text-xs">超大图片不会保存到历史，但会保留当前预览和下载按钮。</p>
+          </div>
+        )}
+      </div>
+
+      {records.length > 0 && (
+        <div>
+          <h4 className="text-sm font-bold mb-3" style={{ color: 'var(--text-primary)' }}>可编辑历史</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {records.map((record) => (
+              <div
+                key={record.id}
+                className="theme-card overflow-hidden group"
+                style={{ padding: 0 }}
+              >
+                <div
+                  className="aspect-square cursor-pointer overflow-hidden"
+                  onClick={() => handleDownload(record.imageUrl)}
+                >
+                  <img
+                    src={record.imageUrl}
+                    alt={record.prompt}
+                    className="w-full h-full object-cover"
+                    style={{ transition: 'transform 0.3s' }}
+                  />
+                </div>
+                <div className="p-3">
+                  <p className="text-sm line-clamp-2" style={{ color: 'var(--text-primary)' }}>{record.prompt}</p>
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span
+                        className="text-xs px-1.5 py-0.5 flex-shrink-0 truncate"
+                        style={{ background: 'color-mix(in srgb, var(--accent-1) 15%, transparent)', color: 'var(--accent-1)', borderRadius: 'var(--radius-sm)', maxWidth: '120px' }}
+                        title={record.model}
+                      >
+                        {record.model}
+                      </span>
+                      <span className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>
+                        {format(record.createdAt, 'MM/dd HH:mm', { locale: zhCN })}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button
+                        onClick={() => handleEditFromHistory(record.imageUrl, record.prompt)}
+                        className="cursor-pointer h-7 px-2 flex items-center justify-center text-xs"
+                        style={{ color: 'var(--accent-1)', transition: 'var(--transition)', borderRadius: 'var(--radius-sm)', background: 'color-mix(in srgb, var(--accent-1) 12%, transparent)' }}
+                        title="基于此图编辑"
+                        aria-label="基于此图编辑"
+                      >
+                        编辑
+                      </button>
+                      <button
+                        onClick={() => deleteRecord(record.id)}
+                        className="cursor-pointer w-7 h-7 flex items-center justify-center"
+                        style={{ color: 'var(--text-muted)', transition: 'var(--transition)', borderRadius: 'var(--radius-sm)' }}
+                        title="删除"
+                        aria-label="删除记录"
+                      >
+                        <IconTrash className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -660,11 +775,15 @@ export default function ImageGenerator() {
             className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold cursor-pointer"
             style={{
               color: mobileTab === 'generate' ? 'var(--accent-1)' : 'var(--text-muted)',
-              borderBottom: mobileTab === 'generate' ? '2px solid var(--accent-1)' : '2px solid transparent',
               background: 'transparent',
-              border: 'none',
+              borderTopWidth: 0,
+              borderRightWidth: 0,
               borderBottomWidth: '2px',
+              borderLeftWidth: 0,
+              borderTopStyle: 'none',
+              borderRightStyle: 'none',
               borderBottomStyle: 'solid',
+              borderLeftStyle: 'none',
               borderBottomColor: mobileTab === 'generate' ? 'var(--accent-1)' : 'transparent',
             }}
           >
@@ -677,14 +796,19 @@ export default function ImageGenerator() {
             style={{
               color: mobileTab === 'history' ? 'var(--accent-1)' : 'var(--text-muted)',
               background: 'transparent',
-              border: 'none',
+              borderTopWidth: 0,
+              borderRightWidth: 0,
               borderBottomWidth: '2px',
+              borderLeftWidth: 0,
+              borderTopStyle: 'none',
+              borderRightStyle: 'none',
               borderBottomStyle: 'solid',
+              borderLeftStyle: 'none',
               borderBottomColor: mobileTab === 'history' ? 'var(--accent-1)' : 'transparent',
             }}
           >
             <IconHistory className="w-4 h-4" />
-            <span>历史 {records.length > 0 && `(${records.length})`}</span>
+            <span>预览 {records.length > 0 && `(${records.length})`}</span>
           </button>
         </div>
       </div>
@@ -705,7 +829,7 @@ export default function ImageGenerator() {
         {generatorPanel}
       </div>
       <div className={`${mobileTab === 'history' ? 'flex' : 'hidden'} md:flex flex-col flex-1 min-h-0`}>
-        {historyPanel}
+        {previewPanel}
       </div>
 
       {/* 全局 API 配置弹窗 */}

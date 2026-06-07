@@ -12,7 +12,7 @@ export const DEFAULT_IMAGE_MODEL = 'gpt-image-2'
 
 /** 支持的图片尺寸（gpt-image 系列）；auto 让模型自动选最优 */
 export const IMAGE_SIZES = ['auto', '1024x1024', '1536x1024', '1024x1536', '2048x2048', '2048x1152'] as const
-export type ImageSize = (typeof IMAGE_SIZES)[number]
+export type ImageSize = (typeof IMAGE_SIZES)[number] | `${number}x${number}`
 
 /** 渲染质量档位；auto 由模型按 prompt 自动选 */
 export const IMAGE_QUALITIES = ['auto', 'low', 'medium', 'high'] as const
