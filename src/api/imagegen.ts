@@ -39,7 +39,13 @@ function parseImageResponse(data: Record<string, unknown>): ImageGenerationResul
     return { success: true, imageUrl: item.url }
   }
   if (item?.b64_json) {
-    return { success: true, imageUrl: `data:image/png;base64,${item.b64_json}` }
+    const outputFormat = item.output_format || (data as { output_format?: string }).output_format || 'png'
+    const mime = outputFormat === 'jpeg' || outputFormat === 'jpg'
+      ? 'image/jpeg'
+      : outputFormat === 'webp'
+        ? 'image/webp'
+        : 'image/png'
+    return { success: true, imageUrl: `data:${mime};base64,${item.b64_json}` }
   }
   return { success: false, error: '未返回图片数据' }
 }

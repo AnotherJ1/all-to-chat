@@ -293,6 +293,21 @@ describe('Property 6: Store 数据持久化 round-trip', () => {
       expect(deserialized.state).toEqual(sampleState)
       expect(deserialized.state.records).toHaveLength(0)
     })
+
+    it('imageHistoryStore 不应持久化超大 base64 图片，避免 localStorage 配额导致 UI 卡住', async () => {
+      const { useImageHistoryStore } = await import('../stores/imageHistoryStore')
+      useImageHistoryStore.setState({ records: [] })
+
+      const hugeImageUrl = `data:image/png;base64,${'A'.repeat(3_600_000)}`
+      useImageHistoryStore.getState().addRecord({
+        prompt: '超大图片',
+        imageUrl: hugeImageUrl,
+        model: 'gpt-image-2',
+        size: '1024x1536',
+      })
+
+      expect(useImageHistoryStore.getState().records).toHaveLength(0)
+    })
   })
 
   describe('JSON.parse(JSON.stringify()) round-trip 对复杂嵌套对象', () => {

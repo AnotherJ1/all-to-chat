@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useConfigStore } from '../../stores/configStore'
-import { useImageHistoryStore } from '../../stores/imageHistoryStore'
+import { MAX_PERSISTED_IMAGE_URL_LENGTH, useImageHistoryStore } from '../../stores/imageHistoryStore'
 import {
   generateImage,
   editImage,
@@ -33,6 +33,12 @@ function fileToDataUrl(file: File): Promise<string> {
   })
 }
 
+function formatElapsed(seconds: number): string {
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return mins > 0 ? `${mins}分${secs.toString().padStart(2, '0')}秒` : `${secs}秒`
+}
+
 export default function ImageGenerator() {
   const navigate = useNavigate()
   const { getCurrentConfig, savedConfigs } = useConfigStore()
@@ -55,6 +61,7 @@ export default function ImageGenerator() {
   const [mode, setMode] = useState<GenMode>('generate')
   const [inputImages, setInputImages] = useState<string[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [currentImage, setCurrentImage] = useState<string | null>(null)
   const [useGlobalConfig, setUseGlobalConfig] = useState(true)
   const [imageModels, setImageModels] = useState<string[]>([])
@@ -68,12 +75,16 @@ export default function ImageGenerator() {
   // 用于卸载时中止正在进行的图片生成
   const generateAbortRef = useRef<AbortController | null>(null)
   const generateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const generateElapsedRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const unmountedRef = useRef(false)
   useEffect(() => {
+    // React StrictMode 开发环境会先执行一次 cleanup 再重新挂载，必须在挂载时重置为 false。
+    unmountedRef.current = false
     return () => {
       unmountedRef.current = true
       generateAbortRef.current?.abort()
       if (generateTimeoutRef.current) clearTimeout(generateTimeoutRef.current)
+      if (generateElapsedRef.current) clearInterval(generateElapsedRef.current)
     }
   }, [])
 
@@ -136,12 +147,17 @@ export default function ImageGenerator() {
     }
 
     setIsGenerating(true)
+    setElapsedSeconds(0)
     setCurrentImage(null)
+    if (generateElapsedRef.current) clearInterval(generateElapsedRef.current)
+    generateElapsedRef.current = setInterval(() => {
+      setElapsedSeconds((prev) => prev + 1)
+    }, 1000)
 
     const controller = new AbortController()
     generateAbortRef.current = controller
-    // 图片生成/编辑均较慢（实测单次生成常达 90~100s+），统一给 5 分钟超时
-    const timeoutMs = 300000
+    // 图片生成/编辑均较慢（实测单次生成可达 4~5 分钟），统一给 10 分钟超时
+    const timeoutMs = 600000
     const timeout = setTimeout(() => controller.abort(), timeoutMs)
     generateTimeoutRef.current = timeout
 
@@ -155,8 +171,13 @@ export default function ImageGenerator() {
       if (unmountedRef.current) return
       if (result.success && result.imageUrl) {
         setCurrentImage(result.imageUrl)
+        const tooLargeForHistory = result.imageUrl.startsWith('data:') && result.imageUrl.length > MAX_PERSISTED_IMAGE_URL_LENGTH
         addRecord({ prompt, imageUrl: result.imageUrl, model: model || DEFAULT_IMAGE_MODEL, size, mode })
-        toast.success(mode === 'edit' ? '图片编辑成功' : '图片生成成功')
+        if (tooLargeForHistory) {
+          toast.warning(`${mode === 'edit' ? '图片编辑成功' : '图片生成成功'}，但图片较大未保存到历史，请及时下载`)
+        } else {
+          toast.success(mode === 'edit' ? '图片编辑成功' : '图片生成成功')
+        }
       } else {
         toast.error(result.error || (mode === 'edit' ? '编辑失败' : '生成失败'))
       }
@@ -169,7 +190,9 @@ export default function ImageGenerator() {
       }
     } finally {
       clearTimeout(timeout)
+      if (generateElapsedRef.current) clearInterval(generateElapsedRef.current)
       generateTimeoutRef.current = null
+      generateElapsedRef.current = null
       generateAbortRef.current = null
       if (!unmountedRef.current) setIsGenerating(false)
     }
@@ -465,6 +488,35 @@ export default function ImageGenerator() {
       >
         {isGenerating ? (mode === 'edit' ? '编辑中...' : '生成中...') : mode === 'edit' ? '生成编辑图' : '生成图片'}
       </button>
+
+      {isGenerating && (
+        <div
+          className="mt-3 p-3"
+          style={{ border: 'var(--border-width) solid var(--border-color)', borderRadius: 'var(--radius-sm)', background: 'color-mix(in srgb, var(--accent-1) 8%, transparent)' }}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className="w-5 h-5 rounded-full animate-spin flex-shrink-0"
+              style={{ border: '3px solid color-mix(in srgb, var(--accent-1) 25%, transparent)', borderTopColor: 'var(--accent-1)' }}
+              aria-hidden="true"
+            />
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                {mode === 'edit' ? '正在编辑图片' : '正在生成图片'}
+                <span className="inline-block animate-bounce" style={{ animationDelay: '0ms' }}>.</span>
+                <span className="inline-block animate-bounce" style={{ animationDelay: '120ms' }}>.</span>
+                <span className="inline-block animate-bounce" style={{ animationDelay: '240ms' }}>.</span>
+                <span className="ml-2 text-xs font-normal" style={{ color: 'var(--text-muted)' }}>
+                  已用时 {formatElapsed(elapsedSeconds)}
+                </span>
+              </div>
+              <p className="text-xs mt-1 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                GPT Image 2 可能需要 1-5 分钟，复杂提示可能更久；最长等待 10 分钟，请勿关闭页面。
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 当前图片预览 */}
       {currentImage && (
