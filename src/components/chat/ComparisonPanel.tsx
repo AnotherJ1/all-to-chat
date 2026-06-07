@@ -74,10 +74,10 @@ export default function ComparisonPanel() {
       if (list.length > 0) {
         setModelLists((prev) => new Map(prev).set(modelId, list))
       } else {
-        toast.warning('未获取到模型列表')
+        toast.warning('该地址未返回任何模型')
       }
-    } catch {
-      toast.error('获取模型列表失败')
+    } catch (err) {
+      toast.error(`获取模型列表失败：${err instanceof Error ? err.message : '未知错误'}`)
     } finally {
       setLoadingModels((prev) => { const s = new Set(prev); s.delete(modelId); return s })
     }

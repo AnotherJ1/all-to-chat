@@ -10,9 +10,17 @@ export interface ImageGenerationResult {
 /** GPT Image 2 默认模型名 */
 export const DEFAULT_IMAGE_MODEL = 'gpt-image-2'
 
-/** 支持的图片尺寸（gpt-image 系列） */
-export const IMAGE_SIZES = ['1024x1024', '1536x1024', '1024x1536', 'auto'] as const
+/** 支持的图片尺寸（gpt-image 系列）；auto 让模型自动选最优 */
+export const IMAGE_SIZES = ['auto', '1024x1024', '1536x1024', '1024x1536', '2048x2048', '2048x1152'] as const
 export type ImageSize = (typeof IMAGE_SIZES)[number]
+
+/** 渲染质量档位；auto 由模型按 prompt 自动选 */
+export const IMAGE_QUALITIES = ['auto', 'low', 'medium', 'high'] as const
+export type ImageQuality = (typeof IMAGE_QUALITIES)[number]
+
+/** 输出格式；jpeg/webp 可配合 output_compression 压缩 */
+export const IMAGE_FORMATS = ['png', 'jpeg', 'webp'] as const
+export type ImageFormat = (typeof IMAGE_FORMATS)[number]
 
 /**
  * 解析图片生成响应（OpenAI Images 格式）
@@ -125,20 +133,44 @@ async function generateWithChatCompletions(
   return { success: false, error: '模型未返回图片，该代理可能不支持图片生成' }
 }
 
+/** 可选的图片输出参数（生成 / 编辑共用） */
+export interface ImageOptions {
+  quality?: ImageQuality
+  outputFormat?: ImageFormat
+  /** jpeg/webp 压缩级别 0-100 */
+  outputCompression?: number
+}
+
+/** 把可选输出参数写入请求体（仅在非默认值时附加，保持请求体精简） */
+function applyImageOptions(body: Record<string, unknown>, opts?: ImageOptions): void {
+  if (!opts) return
+  if (opts.quality && opts.quality !== 'auto') body.quality = opts.quality
+  if (opts.outputFormat) body.output_format = opts.outputFormat
+  // 压缩仅对 jpeg/webp 有意义
+  if (
+    typeof opts.outputCompression === 'number' &&
+    opts.outputFormat &&
+    opts.outputFormat !== 'png'
+  ) {
+    body.output_compression = opts.outputCompression
+  }
+}
+
 /**
  * GPT Image 2 图片生成
  * 走标准 /v1/images/generations；若代理内部转换失败（tool_choice / image_generation 报错），
  * 回退到 chat/completions + modalities 方式（保持同一图片模型）。
  *
  * 注意：gpt-image 系列默认返回 b64_json 且不接受 response_format 参数，
- * 因此请求体保持最简（model/prompt/n/size），不要附加 response_format。
+ * 因此请求体保持最简（model/prompt/n/size + 可选 quality/output_format），不要附加 response_format。
  */
 export async function generateImage(
   baseUrl: string,
   apiKey: string,
   model: string,
   prompt: string,
-  size: ImageSize = '1024x1024',
+  size: ImageSize = 'auto',
+  options?: ImageOptions,
   signal?: AbortSignal
 ): Promise<ImageGenerationResult> {
   try {
@@ -151,6 +183,7 @@ export async function generateImage(
       n: 1,
       size,
     }
+    applyImageOptions(body, options)
 
     const response = await fetch(`${base}/v1/images/generations`, {
       method: 'POST',
@@ -169,6 +202,63 @@ export async function generateImage(
         return generateWithChatCompletions(base, apiKey, actualModel, prompt, signal)
       }
       return { success: false, error: errMsg }
+    }
+
+    const data = await response.json()
+    return parseImageResponse(data)
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') throw error
+    return { success: false, error: error instanceof Error ? error.message : '网络错误' }
+  }
+}
+
+/**
+ * GPT Image 2 图片编辑 / 多图融合
+ * 走标准 /v1/images/edits（OpenAI Images 编辑端点），在已有图基础上按 prompt 修改，
+ * 或以多张参考图融合生成新图。images 为 data URL（data:image/...;base64,xxx）或可访问的 http(s) URL，至少 1 张。
+ *
+ * 与生成端点一致：默认返回 b64_json，请求体保持精简（model/prompt/images/n/size + 可选 quality/output_format）。
+ */
+export async function editImage(
+  baseUrl: string,
+  apiKey: string,
+  model: string,
+  prompt: string,
+  images: string[],
+  size: ImageSize = 'auto',
+  options?: ImageOptions,
+  signal?: AbortSignal
+): Promise<ImageGenerationResult> {
+  try {
+    const base = baseUrl.replace(/\/$/, '')
+    const actualModel = model || DEFAULT_IMAGE_MODEL
+
+    const validImages = images.map((u) => u.trim()).filter(Boolean)
+    if (validImages.length === 0) {
+      return { success: false, error: '请至少提供一张输入图片' }
+    }
+
+    const body: Record<string, unknown> = {
+      model: actualModel,
+      prompt,
+      images: validImages.map((url) => ({ image_url: url })),
+      n: 1,
+      size,
+    }
+    applyImageOptions(body, options)
+
+    const response = await fetch(`${base}/v1/images/edits`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(body),
+      signal,
+    })
+
+    if (!response.ok) {
+      return { success: false, error: await extractError(response) }
     }
 
     const data = await response.json()

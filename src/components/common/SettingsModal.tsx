@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useConfigStore } from '../../stores/configStore'
 import { fetchModelList } from '../../api/openai'
+import { toast } from '../../stores/toastStore'
 import { IconClose } from './Icons'
 import type { Protocol } from '../../types'
 
@@ -53,9 +54,11 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
       if (list.length > 0) {
         setModels(list)
         setShowModelList(true)
+      } else {
+        toast.warning('该地址未返回任何模型')
       }
-    } catch {
-      console.error('Failed to fetch models')
+    } catch (err) {
+      toast.error(`获取模型列表失败：${err instanceof Error ? err.message : '未知错误'}`)
     } finally {
       setLoadingModels(false)
     }

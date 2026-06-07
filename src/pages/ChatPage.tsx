@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import Sidebar from '../components/chat/Sidebar'
 import ChatView from '../components/chat/ChatView'
 import SettingsModal from '../components/common/SettingsModal'
-import BackToHome from '../components/common/BackToHome'
 import { useSessionStore } from '../stores/sessionStore'
 import { IconSettings, IconMenu } from '../components/common/Icons'
 
@@ -72,11 +71,6 @@ export default function ChatPage() {
         >
           <IconSettings className="w-5 h-5" style={{ color: 'var(--text-primary)' }} />
         </button>
-      </div>
-
-      {/* 桌面端：返回首页按钮（移动端隐藏，移动端通过抽屉内的按钮返回） */}
-      <div className="hidden md:block">
-        <BackToHome />
       </div>
 
       {/* 桌面端：设置按钮（移动端在顶部工具栏） */}

@@ -2,14 +2,36 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useConfigStore } from '../../stores/configStore'
 import { useImageHistoryStore } from '../../stores/imageHistoryStore'
-import { generateImage, DEFAULT_IMAGE_MODEL, IMAGE_SIZES, type ImageSize } from '../../api/imagegen'
+import {
+  generateImage,
+  editImage,
+  DEFAULT_IMAGE_MODEL,
+  IMAGE_SIZES,
+  IMAGE_QUALITIES,
+  IMAGE_FORMATS,
+  type ImageSize,
+  type ImageQuality,
+  type ImageFormat,
+} from '../../api/imagegen'
 import { fetchModelList } from '../../api/openai'
 import { toast } from '../../stores/toastStore'
-import { IconDownload, IconTrash, IconArrowLeft, IconImage, IconHistory } from '../common/Icons'
+import { IconDownload, IconTrash, IconArrowLeft, IconImage, IconHistory, IconSettings } from '../common/Icons'
+import SettingsModal from '../common/SettingsModal'
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
 
 type MobileTab = 'generate' | 'history'
+type GenMode = 'generate' | 'edit'
+
+/** 把本地文件读成 data URL（base64），供编辑端点的 image_url 使用 */
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = () => reject(new Error('读取文件失败'))
+    reader.readAsDataURL(file)
+  })
+}
 
 export default function ImageGenerator() {
   const navigate = useNavigate()
@@ -19,13 +41,19 @@ export default function ImageGenerator() {
 
   // 移动端 tab
   const [mobileTab, setMobileTab] = useState<MobileTab>('generate')
+  // 全局 API 配置弹窗
+  const [showSettings, setShowSettings] = useState(false)
 
   // 图片生成使用的配置(默认跟随全局)
   const [customBaseUrl, setCustomBaseUrl] = useState(globalConfig.baseUrl)
   const [customApiKey, setCustomApiKey] = useState(globalConfig.apiKey)
   const [prompt, setPrompt] = useState('')
   const [model, setModel] = useState(DEFAULT_IMAGE_MODEL)
-  const [size, setSize] = useState<ImageSize>('1024x1024')
+  const [size, setSize] = useState<ImageSize>('auto')
+  const [quality, setQuality] = useState<ImageQuality>('auto')
+  const [outputFormat, setOutputFormat] = useState<ImageFormat>('png')
+  const [mode, setMode] = useState<GenMode>('generate')
+  const [inputImages, setInputImages] = useState<string[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
   const [currentImage, setCurrentImage] = useState<string | null>(null)
   const [useGlobalConfig, setUseGlobalConfig] = useState(true)
@@ -67,13 +95,33 @@ export default function ImageGenerator() {
         setImageModels(list)
         setShowImageModelList(true)
       } else {
-        toast.warning('未获取到模型列表')
+        toast.warning('该地址未返回任何模型')
       }
-    } catch {
-      toast.error('获取模型列表失败')
+    } catch (err) {
+      toast.error(`获取模型列表失败：${err instanceof Error ? err.message : '未知错误'}`)
     } finally {
       setLoadingImageModels(false)
     }
+  }
+
+  // 选择本地图片加入编辑输入
+  const handlePickFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return
+    try {
+      const urls = await Promise.all(Array.from(files).map(fileToDataUrl))
+      setInputImages((prev) => [...prev, ...urls])
+    } catch {
+      toast.error('读取图片失败')
+    }
+  }
+
+  // 从历史记录带入一张图进入编辑模式
+  const handleEditFromHistory = (imageUrl: string, basePrompt: string) => {
+    setMode('edit')
+    setInputImages([imageUrl])
+    setPrompt(basePrompt)
+    setCurrentImage(null)
+    setMobileTab('generate')
   }
 
   const handleGenerate = async () => {
@@ -82,31 +130,42 @@ export default function ImageGenerator() {
       toast.error('请先配置 API Key')
       return
     }
+    if (mode === 'edit' && inputImages.length === 0) {
+      toast.error('编辑模式请至少添加一张输入图片')
+      return
+    }
 
     setIsGenerating(true)
     setCurrentImage(null)
 
     const controller = new AbortController()
     generateAbortRef.current = controller
-    const timeout = setTimeout(() => controller.abort(), 60000)
+    // 图片生成/编辑均较慢（实测单次生成常达 90~100s+），统一给 5 分钟超时
+    const timeoutMs = 300000
+    const timeout = setTimeout(() => controller.abort(), timeoutMs)
     generateTimeoutRef.current = timeout
 
+    const options = { quality, outputFormat, outputCompression: 80 }
+
     try {
-      const result = await generateImage(activeBaseUrl, activeApiKey, model, prompt, size, controller.signal)
+      const result =
+        mode === 'edit'
+          ? await editImage(activeBaseUrl, activeApiKey, model, prompt, inputImages, size, options, controller.signal)
+          : await generateImage(activeBaseUrl, activeApiKey, model, prompt, size, options, controller.signal)
       if (unmountedRef.current) return
       if (result.success && result.imageUrl) {
         setCurrentImage(result.imageUrl)
-        addRecord({ prompt, imageUrl: result.imageUrl, model: model || DEFAULT_IMAGE_MODEL, size })
-        toast.success('图片生成成功')
+        addRecord({ prompt, imageUrl: result.imageUrl, model: model || DEFAULT_IMAGE_MODEL, size, mode })
+        toast.success(mode === 'edit' ? '图片编辑成功' : '图片生成成功')
       } else {
-        toast.error(result.error || '生成失败')
+        toast.error(result.error || (mode === 'edit' ? '编辑失败' : '生成失败'))
       }
     } catch (err) {
       if (unmountedRef.current) return
       if (err instanceof Error && err.name === 'AbortError') {
-        toast.error('图片生成超时（60秒），请重试')
+        toast.error(`图片${mode === 'edit' ? '编辑' : '生成'}超时（${timeoutMs / 60000}分钟），请重试`)
       } else {
-        toast.error(err instanceof Error ? err.message : '生成失败')
+        toast.error(err instanceof Error ? err.message : '请求失败')
       }
     } finally {
       clearTimeout(timeout)
@@ -147,26 +206,108 @@ export default function ImageGenerator() {
     <div className="w-full md:w-96 p-4 md:p-6 flex flex-col overflow-y-auto theme-sidebar md:flex-shrink-0 h-full">
       <h2 className="text-lg font-bold mb-4 hidden md:block" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-heading)' }}>图片生成</h2>
 
+      {/* 模式切换：生成 / 编辑 */}
+      <div className="mb-4">
+        <div className="flex gap-2">
+          {([
+            { v: 'generate', label: '文生图' },
+            { v: 'edit', label: '图生图 / 编辑' },
+          ] as const).map((m) => (
+            <button
+              key={m.v}
+              onClick={() => setMode(m.v)}
+              className={mode === m.v ? 'theme-btn theme-btn-primary flex-1' : 'theme-btn flex-1'}
+              style={{ padding: '6px 12px', fontSize: '13px' }}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 编辑模式：输入图片区域 */}
+      {mode === 'edit' && (
+        <div className="mb-4 p-3" style={{ border: 'var(--border-width) solid var(--border-color)', borderRadius: 'var(--radius-sm)' }}>
+          <div className="flex items-center justify-between mb-2 gap-2">
+            <label className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+              输入图片 {inputImages.length > 0 && `(${inputImages.length})`}
+            </label>
+            <label className="theme-btn flex-shrink-0 cursor-pointer" style={{ padding: '2px 8px', fontSize: '11px' }}>
+              + 添加图片
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  handlePickFiles(e.target.files)
+                  e.target.value = ''
+                }}
+              />
+            </label>
+          </div>
+          {inputImages.length === 0 ? (
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              上传 1 张图修改，或多张图融合生成。也可在右侧历史点「编辑」带入。
+            </p>
+          ) : (
+            <div className="grid grid-cols-3 gap-2">
+              {inputImages.map((img, idx) => (
+                <div key={idx} className="relative aspect-square overflow-hidden" style={{ borderRadius: 'var(--radius-sm)', border: 'var(--border-width) solid var(--border-color)' }}>
+                  <img src={img} alt={`输入 ${idx + 1}`} className="w-full h-full object-cover" />
+                  <button
+                    onClick={() => setInputImages((prev) => prev.filter((_, i) => i !== idx))}
+                    className="absolute top-0.5 right-0.5 w-5 h-5 flex items-center justify-center cursor-pointer"
+                    style={{ background: 'rgba(0,0,0,0.6)', color: '#fff', borderRadius: 'var(--radius-sm)' }}
+                    title="移除"
+                    aria-label="移除图片"
+                  >
+                    <IconTrash className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* API 配置选择 */}
       <div className="mb-4 p-3" style={{ border: 'var(--border-width) solid var(--border-color)', borderRadius: 'var(--radius-sm)' }}>
         <div className="flex items-center justify-between mb-2 gap-2">
           <label className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>API 配置</label>
-          <button
-            onClick={() => {
-              setUseGlobalConfig(true)
-              setCustomBaseUrl(globalConfig.baseUrl)
-              setCustomApiKey(globalConfig.apiKey)
-            }}
-            className="theme-btn flex-shrink-0"
-            style={{ padding: '2px 8px', fontSize: '11px', background: useGlobalConfig ? 'color-mix(in srgb, var(--accent-1) 15%, transparent)' : 'transparent', color: useGlobalConfig ? 'var(--accent-1)' : 'var(--text-muted)' }}
-          >
-            使用全局配置
-          </button>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <button
+              onClick={() => {
+                setUseGlobalConfig(true)
+                setCustomBaseUrl(globalConfig.baseUrl)
+                setCustomApiKey(globalConfig.apiKey)
+              }}
+              className="theme-btn"
+              style={{ padding: '2px 8px', fontSize: '11px', background: useGlobalConfig ? 'color-mix(in srgb, var(--accent-1) 15%, transparent)' : 'transparent', color: useGlobalConfig ? 'var(--accent-1)' : 'var(--text-muted)' }}
+            >
+              使用全局配置
+            </button>
+            <button
+              onClick={() => setShowSettings(true)}
+              className="theme-btn flex items-center gap-1"
+              style={{ padding: '2px 8px', fontSize: '11px' }}
+              title="打开全局 API 配置"
+            >
+              <IconSettings className="w-3 h-3" />
+              配置
+            </button>
+          </div>
         </div>
         {useGlobalConfig ? (
-          <div className="text-xs break-all" style={{ color: 'var(--text-muted)' }}>
-            当前使用全局配置: {globalConfig.baseUrl}
-          </div>
+          globalConfig.apiKey ? (
+            <div className="text-xs break-all" style={{ color: 'var(--text-muted)' }}>
+              当前使用全局配置: {globalConfig.baseUrl}
+            </div>
+          ) : (
+            <div className="text-xs" style={{ color: '#f87171' }}>
+              尚未配置全局 API，点右上「配置」按钮设置 Base URL 与 API Key。
+            </div>
+          )
         ) : (
           <div className="space-y-2">
             <input
@@ -219,8 +360,47 @@ export default function ImageGenerator() {
           ))}
         </div>
         <p className="text-xs mt-2 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-          基于 OpenAI GPT Image 2 协议（/v1/images/generations），适用于 OpenAI 官方及 OneAPI / NewAPI / CLIProxyAPI 等兼容代理。
+          基于 OpenAI GPT Image 2 协议，适用于 OpenAI 官方及 OneAPI / NewAPI / CLIProxyAPI 等兼容代理。
         </p>
+      </div>
+
+      {/* 质量选择 */}
+      <div className="mb-4">
+        <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>质量</label>
+        <div className="flex flex-wrap gap-2">
+          {IMAGE_QUALITIES.map((q) => (
+            <button
+              key={q}
+              onClick={() => setQuality(q)}
+              className={quality === q ? 'theme-btn theme-btn-primary' : 'theme-btn'}
+              style={{ padding: '6px 12px', fontSize: '13px' }}
+            >
+              {q === 'auto' ? '自动' : q === 'low' ? '低' : q === 'medium' ? '中' : '高'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 输出格式 */}
+      <div className="mb-4">
+        <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>格式</label>
+        <div className="flex flex-wrap gap-2">
+          {IMAGE_FORMATS.map((f) => (
+            <button
+              key={f}
+              onClick={() => setOutputFormat(f)}
+              className={outputFormat === f ? 'theme-btn theme-btn-primary' : 'theme-btn'}
+              style={{ padding: '6px 12px', fontSize: '13px' }}
+            >
+              {f.toUpperCase()}
+            </button>
+          ))}
+        </div>
+        {outputFormat !== 'png' && (
+          <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
+            {outputFormat.toUpperCase()} 格式将以 80% 压缩输出，体积更小。
+          </p>
+        )}
       </div>
 
       {/* 模型输入 */}
@@ -271,7 +451,7 @@ export default function ImageGenerator() {
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder="描述你想要生成的图片..."
+          placeholder={mode === 'edit' ? '描述想要的修改，如「给猫加一顶帽子」...' : '描述你想要生成的图片...'}
           className="theme-input h-32 resize-none"
         />
       </div>
@@ -279,11 +459,11 @@ export default function ImageGenerator() {
       {/* 生成按钮 */}
       <button
         onClick={handleGenerate}
-        disabled={isGenerating || !prompt.trim()}
+        disabled={isGenerating || !prompt.trim() || (mode === 'edit' && inputImages.length === 0)}
         className="theme-btn theme-btn-primary w-full"
-        style={{ opacity: (isGenerating || !prompt.trim()) ? 0.5 : 1 }}
+        style={{ opacity: (isGenerating || !prompt.trim() || (mode === 'edit' && inputImages.length === 0)) ? 0.5 : 1 }}
       >
-        {isGenerating ? '生成中...' : '生成图片'}
+        {isGenerating ? (mode === 'edit' ? '编辑中...' : '生成中...') : mode === 'edit' ? '生成编辑图' : '生成图片'}
       </button>
 
       {/* 当前图片预览 */}
@@ -362,15 +542,26 @@ export default function ImageGenerator() {
                       {format(record.createdAt, 'MM/dd HH:mm', { locale: zhCN })}
                     </span>
                   </div>
-                  <button
-                    onClick={() => deleteRecord(record.id)}
-                    className="cursor-pointer flex-shrink-0 w-7 h-7 flex items-center justify-center"
-                    style={{ color: 'var(--text-muted)', transition: 'var(--transition)', borderRadius: 'var(--radius-sm)' }}
-                    title="删除"
-                    aria-label="删除记录"
-                  >
-                    <IconTrash className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <button
+                      onClick={() => handleEditFromHistory(record.imageUrl, record.prompt)}
+                      className="cursor-pointer h-7 px-2 flex items-center justify-center text-xs"
+                      style={{ color: 'var(--accent-1)', transition: 'var(--transition)', borderRadius: 'var(--radius-sm)', background: 'color-mix(in srgb, var(--accent-1) 12%, transparent)' }}
+                      title="基于此图编辑"
+                      aria-label="基于此图编辑"
+                    >
+                      编辑
+                    </button>
+                    <button
+                      onClick={() => deleteRecord(record.id)}
+                      className="cursor-pointer w-7 h-7 flex items-center justify-center"
+                      style={{ color: 'var(--text-muted)', transition: 'var(--transition)', borderRadius: 'var(--radius-sm)' }}
+                      title="删除"
+                      aria-label="删除记录"
+                    >
+                      <IconTrash className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -402,7 +593,14 @@ export default function ImageGenerator() {
           >
             图片生成
           </span>
-          <div style={{ width: '40px' }} aria-hidden="true" />
+          <button
+            onClick={() => setShowSettings(true)}
+            className="theme-btn"
+            style={{ padding: 0, width: '40px', height: '40px' }}
+            aria-label="API 设置"
+          >
+            <IconSettings className="w-5 h-5" style={{ color: 'var(--text-primary)' }} />
+          </button>
         </div>
         <div className="flex border-t" style={{ borderColor: 'var(--border-color)' }}>
           <button
@@ -439,6 +637,17 @@ export default function ImageGenerator() {
         </div>
       </div>
 
+      {/* 桌面端：API 设置按钮（右上角，移动端在顶栏内） */}
+      <button
+        onClick={() => setShowSettings(true)}
+        className="hidden md:flex fixed top-4 right-4 z-50 w-10 h-10 items-center justify-center theme-btn"
+        style={{ padding: 0, width: '40px', height: '40px' }}
+        title="API 设置"
+        aria-label="API 设置"
+      >
+        <IconSettings className="w-5 h-5" style={{ color: 'var(--text-primary)' }} />
+      </button>
+
       {/* 移动端：根据 tab 切换显示；桌面端：并排显示 */}
       <div className={`${mobileTab === 'generate' ? 'flex' : 'hidden'} md:flex flex-col flex-1 md:flex-initial min-h-0`}>
         {generatorPanel}
@@ -446,6 +655,9 @@ export default function ImageGenerator() {
       <div className={`${mobileTab === 'history' ? 'flex' : 'hidden'} md:flex flex-col flex-1 min-h-0`}>
         {historyPanel}
       </div>
+
+      {/* 全局 API 配置弹窗 */}
+      <SettingsModal open={showSettings} onClose={() => setShowSettings(false)} />
     </div>
   )
 }

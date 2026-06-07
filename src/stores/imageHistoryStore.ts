@@ -9,6 +9,8 @@ export interface ImageRecord {
   imageUrl: string
   model: string
   size?: string
+  /** 生成来源；旧记录无此字段，按 generate 处理 */
+  mode?: 'generate' | 'edit'
   createdAt: number
 }
 

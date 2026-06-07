@@ -20,6 +20,15 @@ export default function Sidebar({ collapsed, onToggle, onItemClick }: SidebarPro
     return (
       <div className="hidden md:flex w-14 theme-sidebar flex-col items-center py-4 gap-3 h-full">
         <button
+          onClick={() => navigate('/')}
+          className="theme-btn"
+          style={{ padding: 0, width: '36px', height: '36px' }}
+          title="返回首页"
+          aria-label="返回首页"
+        >
+          <IconArrowLeft className="w-5 h-5" style={{ color: 'var(--text-secondary)' }} />
+        </button>
+        <button
           onClick={onToggle}
           className="theme-btn"
           style={{ padding: 0, width: '36px', height: '36px' }}
@@ -46,10 +55,10 @@ export default function Sidebar({ collapsed, onToggle, onItemClick }: SidebarPro
         className="p-3 md:p-4 flex items-center gap-2"
         style={{ borderBottom: 'var(--border-width) solid var(--border-color)' }}
       >
-        {/* 移动端：返回首页按钮替代「折叠侧栏」 */}
+        {/* 返回首页按钮（移动端替代折叠键；桌面端常驻） */}
         <button
           onClick={() => navigate('/')}
-          className="theme-btn md:hidden"
+          className="theme-btn"
           style={{ padding: 0, width: '32px', height: '32px' }}
           aria-label="返回首页"
           title="返回首页"

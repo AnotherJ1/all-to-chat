@@ -103,35 +103,75 @@ export async function chatCompletion({
   }
 }
 
-// 获取模型列表
-export async function fetchModelList(baseUrl: string, apiKey: string): Promise<string[]> {
-  try {
-    const base = baseUrl.replace(/\/$/, '')
-    // 先尝试标准 /v1/models,再 fallback 到 /api/models (NewAPI 代理)
-    const urls = [`${base}/v1/models`, `${base}/api/models`]
+/** 从模型列表响应中解析出 model id 数组；无法识别的结构返回 null */
+function parseModelList(data: unknown): string[] | null {
+  // 标准 OpenAI / CLIProxyAPI 格式：{ object:"list", data:[{id}] }
+  if (data && typeof data === 'object' && Array.isArray((data as { data?: unknown }).data)) {
+    return (data as { data: Array<{ id: string }> }).data.map((m) => m.id).filter(Boolean)
+  }
+  // 部分代理直接返回数组（字符串或 {id}）
+  if (Array.isArray(data)) {
+    return data.map((m: string | { id: string }) => (typeof m === 'string' ? m : m.id)).filter(Boolean)
+  }
+  return null
+}
 
-    for (const url of urls) {
-      try {
-        // 每个请求 15s 超时，避免慢/挂起的代理导致「加载中」一直转
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: { Authorization: `Bearer ${apiKey}` },
-          signal: AbortSignal.timeout(15000),
-        })
-        if (!response.ok) continue
-        const data = await response.json()
-        if (data.data && Array.isArray(data.data)) {
-          return data.data.map((m: { id: string }) => m.id)
-        }
-        if (Array.isArray(data)) {
-          return data.map((m: string | { id: string }) => typeof m === 'string' ? m : m.id)
-        }
-      } catch {
+/**
+ * 获取模型列表
+ * 依次尝试 /v1/models（OpenAI / CLIProxyAPI 标准）与 /api/models（NewAPI 代理）。
+ *
+ * 错误语义：
+ * - 成功拿到响应但列表为空/结构未知 → 返回 []（"该地址确实没有可列模型"）
+ * - 鉴权失败 / HTTP 错误 / 网络超时 → 抛出携带真实原因的 Error，由调用方提示用户
+ *   （避免把 401「API Key 无效」伪装成「未获取到模型」）
+ */
+export async function fetchModelList(baseUrl: string, apiKey: string): Promise<string[]> {
+  const base = baseUrl.replace(/\/$/, '')
+  const urls = [`${base}/v1/models`, `${base}/api/models`]
+
+  let lastError: string | null = null
+  for (const url of urls) {
+    try {
+      // 每个请求 15s 超时，避免慢/挂起的代理导致「加载中」一直转
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${apiKey}` },
+        signal: AbortSignal.timeout(15000),
+      })
+      if (!response.ok) {
+        // 404 多为该路径不存在，继续尝试下一个端点；其余错误（401/403/5xx）记录原因
+        lastError = await extractModelListError(response)
         continue
       }
+      const parsed = parseModelList(await response.json())
+      if (parsed) return parsed
+      // 200 但结构无法识别，记录后继续尝试
+      lastError = '响应格式无法识别'
+    } catch (err) {
+      if (err instanceof Error && err.name === 'TimeoutError') {
+        lastError = '请求超时（15秒）'
+      } else if (err instanceof Error && err.name === 'AbortError') {
+        throw err
+      } else {
+        lastError = err instanceof Error ? err.message : '网络错误'
+      }
     }
-    return []
-  } catch {
-    return []
   }
+
+  // 所有端点都失败：抛出真实原因，让调用方区分「鉴权失败」与「确无模型」
+  throw new Error(lastError || '未获取到模型列表')
+}
+
+/** 从模型列表错误响应中提取可读信息（兼容 CLIProxyAPI 的 {error:"..."} 等格式） */
+async function extractModelListError(response: Response): Promise<string> {
+  const body = (await response.json().catch(() => null)) as
+    | { error?: string | { message?: string }; message?: string }
+    | null
+  const err = body?.error
+  const detail =
+    (typeof err === 'string' && err) ||
+    (err && typeof err === 'object' && err.message) ||
+    body?.message ||
+    ''
+  return detail ? `${detail}（HTTP ${response.status}）` : `HTTP ${response.status}`
 }
