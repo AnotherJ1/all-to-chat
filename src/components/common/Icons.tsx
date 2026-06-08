@@ -352,3 +352,22 @@ export function IconFileTransfer({ className = 'w-5 h-5', style }: IconProps) {
     </svg>
   )
 }
+
+/** 条形码图标：粗细不一的竖线象征一维码 */
+export function IconBarcode({ className = 'w-5 h-5', style }: IconProps) {
+  return (
+    <svg className={className} style={style} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+      <path strokeLinecap="round" d="M4 6v12M7 6v12M10 6v12M13 6v12M17 6v12M20 6v12" />
+    </svg>
+  )
+}
+
+/** ASCII Art 图标：用 “</>” 与点阵暗示字符画 */
+export function IconAscii({ className = 'w-5 h-5', style }: IconProps) {
+  return (
+    <svg className={className} style={style} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8 9l-2 3 2 3M16 9l2 3-2 3M13 8l-2 8" />
+    </svg>
+  )
+}

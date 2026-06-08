@@ -4,6 +4,7 @@ import {
   IconChat, IconImage, IconJson, IconDatabase, IconBase64, IconClock, IconLink, IconCron, IconDiff, IconCollage, IconQrCode,
   // 批次 A-D 新增
   IconCurl, IconColor, IconDataConvert, IconIdGen, IconImageCompress, IconMarkdown, IconCsv, IconFileTransfer,
+  IconBarcode, IconAscii,
 } from '../components/common/Icons'
 
 /**
@@ -183,5 +184,25 @@ export const toolRegistry: ToolMeta[] = [
     component: lazy(() => import('../pages/FileTransferPage')),
     category: 'dev',
     keywords: ['p2p', 'webrtc', '传文件', '互传', 'send', 'share', 'airdrop'],
+  },
+  {
+    id: 'barcode',
+    name: '条形码工具',
+    description: '生成 Code128 / EAN / UPC 等一维码，支持图片上传与摄像头扫描解析',
+    icon: IconBarcode,
+    route: '/barcode',
+    component: lazy(() => import('../pages/BarcodePage')),
+    category: 'image',
+    keywords: ['barcode', '条码', 'code128', 'ean', 'upc', '扫码', 'scan'],
+  },
+  {
+    id: 'ascii-art',
+    name: 'ASCII Art',
+    description: '图片转字符画 + 文字转 ASCII 艺术横幅（figlet 多字体）',
+    icon: IconAscii,
+    route: '/ascii-art',
+    component: lazy(() => import('../pages/AsciiArtPage')),
+    category: 'image',
+    keywords: ['ascii', '字符画', '字符图', 'figlet', 'banner', '横幅', 'art'],
   },
 ]

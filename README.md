@@ -1,6 +1,6 @@
 # Tool Hub
 
-> 开发者工具集合平台 — AI 聊天（多协议 / 多模型对比 / 系统提示词预设）、图片生成、JSON 格式化、MyBatis 日志转 SQL、Base64 图片互转、时间戳转换、URL 工具、Cron 可视化、文本对比
+> 开发者工具集合平台 — 21 款离线优先的纯前端工具：AI 聊天（多协议 / 多模型对比 / 系统提示词预设）、图片生成、JSON 格式化、数据格式互转、二维码 / 条形码、ASCII Art、文件 P2P 直传等，覆盖 AI、文本与数据、开发辅助、图像处理、编码与时间五大分类。
 
 ## 功能概览
 
@@ -15,6 +15,18 @@
 | URL 工具 | `/url` | URL 编解码 + Query 参数表格化解析与编辑 |
 | Cron 可视化 | `/cron` | 解析 Cron 表达式，预览未来执行时间 |
 | 文本对比 | `/diff` | 行级 diff，双栏 / 统一视图，差异块导航跳转 |
+| 自由拼图 | `/collage` | 多图自由画布：拖动、缩放，一键导出 PNG / JPG / 剪贴板 |
+| 二维码工具 | `/qr-code` | 二维码快速生成与解析，支持自定义 Logo 和颜色 |
+| cURL 工具 | `/curl` | cURL ↔ fetch / axios / Python 等多语言互转 |
+| 颜色工具 | `/color` | HEX / RGB / HSL / OKLCH 互转 + 调色板 + 对比度 |
+| 数据格式互转 | `/data-convert` | JSON / YAML / TOML / XML / env / properties 任意互转 |
+| ID 生成器 | `/id-gen` | UUID / NanoID / Snowflake / ULID 生成与反解析 |
+| 图片压缩 | `/image-compress` | PNG / JPEG / WebP 互转压缩，单图实时 + 批量 ZIP |
+| Markdown 工具 | `/markdown` | 双向 MD ↔ HTML 转换 + PDF / HTML 导出 |
+| CSV ↔ JSON | `/csv` | CSV 与 JSON 互转，自动检测分隔符与表头 |
+| 文件传输 | `/file-transfer` | 跨设备 P2P 直传文件与文本，内网零服务器 |
+| 条形码工具 | `/barcode` | 生成 Code128 / EAN / UPC 等一维码，图片 / 摄像头扫描解析 |
+| ASCII Art | `/ascii-art` | 图片转字符画 + 文字转 ASCII 艺术横幅（figlet 多字体） |
 
 ## 运行截图
 
@@ -54,6 +66,14 @@
 |:---:|:---:|
 | ![Markdown 工具](public/screenshots/markdown.png) | ![CSV ↔ JSON](public/screenshots/csv.png) |
 
+| 图片生成 | 文件传输 |
+|:---:|:---:|
+| ![图片生成](public/screenshots/image.png) | ![文件传输](public/screenshots/file-transfer.png) |
+
+| 条形码工具 | ASCII Art |
+|:---:|:---:|
+| ![条形码工具](public/screenshots/barcode.png) | ![ASCII Art](public/screenshots/ascii-art.png) |
+
 ## 技术栈
 
 - **React 18** + TypeScript
@@ -87,19 +107,13 @@ src/
 │   ├── image/             # 图片生成组件
 │   ├── json/              # JSON 工具组件（预留）
 │   └── mybatis/           # MyBatis 工具组件（预留）
-├── lib/                   # 工具库（SSE、UUID、MyBatis 解析器）
-├── pages/                 # 页面组件
-│   ├── HomePage.tsx       # 首页（工具卡片网格）
-│   ├── ChatPage.tsx       # AI 聊天页面
-│   ├── ImagePage.tsx      # 图片生成页面
-│   ├── JsonFormatterPage.tsx   # JSON 格式化页面
-│   ├── MybatisLogPage.tsx     # MyBatis 日志转 SQL 页面
-│   ├── Base64ImagePage.tsx    # Base64 图片互转页面
-│   ├── TimestampPage.tsx      # 时间戳转换页面
-│   ├── UrlToolPage.tsx        # URL 编解码 / Query 解析页面
-│   ├── CronPage.tsx           # Cron 表达式可视化页面
-│   └── DiffPage.tsx           # 文本对比页面
-├── registry/              # 工具注册表（声明式配置）
+├── lib/                   # 各工具的纯逻辑层（可单测，零 DOM 依赖）
+│   ├── barcode/           # 条形码生成（JsBarcode）/ 解析（@zxing/library）
+│   ├── ascii/             # 图片转字符（Canvas）/ figlet 文字横幅
+│   ├── color/ csv/ curl/ diff/ id/ ...  # 其余工具逻辑
+│   └── ...                # SSE、UUID、MyBatis 解析器等
+├── pages/                 # 页面组件（每个工具一个，注册表自动接线）
+├── registry/              # 工具注册表（声明式配置：新增工具只需登记一条）
 ├── stores/                # Zustand 状态管理
 ├── types/                 # TypeScript 类型定义
 └── workers/               # Web Worker（JSON 格式化、Base64 编解码）
