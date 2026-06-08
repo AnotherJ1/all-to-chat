@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useConfigStore } from '../../stores/configStore'
 import { MAX_PERSISTED_IMAGE_URL_LENGTH, useImageHistoryStore } from '../../stores/imageHistoryStore'
@@ -18,6 +18,7 @@ import { toast } from '../../stores/toastStore'
 import { IconDownload, IconTrash, IconArrowLeft, IconImage, IconHistory, IconSettings } from '../common/Icons'
 import SettingsModal from '../common/SettingsModal'
 import { format } from 'date-fns'
+import { usePasteImage } from '../../lib/usePasteImage'
 import { zhCN } from 'date-fns/locale'
 
 type MobileTab = 'generate' | 'history'
@@ -143,7 +144,7 @@ export default function ImageGenerator() {
   }
 
   // 选择本地图片加入编辑输入
-  const handlePickFiles = async (files: FileList | null) => {
+  const handlePickFiles = useCallback(async (files: FileList | File[] | null) => {
     if (!files || files.length === 0) return
     try {
       const urls = await Promise.all(Array.from(files).map(fileToDataUrl))
@@ -151,7 +152,13 @@ export default function ImageGenerator() {
     } catch {
       toast.error('读取图片失败')
     }
-  }
+  }, [])
+
+  // 支持 Ctrl/⌘ + V 直接粘贴图片：自动进入编辑模式并追加为输入图
+  usePasteImage(useCallback((files: File[]) => {
+    setMode('edit')
+    void handlePickFiles(files)
+  }, [handlePickFiles]))
 
   // 从历史记录带入一张图进入编辑模式
   const handleEditFromHistory = (imageUrl: string, basePrompt: string) => {
@@ -304,7 +311,7 @@ export default function ImageGenerator() {
           </div>
           {inputImages.length === 0 ? (
             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-              上传 1 张图修改，或多张图融合生成。也可在右侧历史点「编辑」带入。
+              上传 1 张图修改，或多张图融合生成。支持 Ctrl+V 粘贴；也可在右侧历史点「编辑」带入。
             </p>
           ) : (
             <div className="grid grid-cols-3 gap-2">

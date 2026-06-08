@@ -13,6 +13,7 @@ import {
   type RenderOptions,
 } from '../lib/barcode/generate'
 import { decodeImageFile, type DecodeResult } from '../lib/barcode/decode'
+import { usePasteImage } from '../lib/usePasteImage'
 
 /**
  * 条形码工具页
@@ -260,6 +261,9 @@ function DecodePanel() {
     toast.success('扫描成功')
   }, [])
 
+  // 支持 Ctrl/⌘ + V 直接粘贴图片解析
+  usePasteImage(useCallback((files: File[]) => { void handleFile(files[0]) }, [handleFile]))
+
   const copy = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text)
@@ -298,7 +302,7 @@ function DecodePanel() {
         }}
       >
         <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-          点击选择 / 拖拽图片到此处解析
+          点击选择 / 拖拽 / Ctrl+V 粘贴图片解析
         </span>
         <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>支持 PNG / JPEG / WebP 等</span>
         <input

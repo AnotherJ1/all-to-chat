@@ -9,6 +9,7 @@ import {
   type RampName,
 } from '../lib/ascii/image-to-ascii'
 import { FONTS, DEFAULT_FONT, renderBanner } from '../lib/ascii/text-banner'
+import { usePasteImage } from '../lib/usePasteImage'
 
 /**
  * ASCII Art 工具页
@@ -155,6 +156,9 @@ function ImagePanel() {
     })
   }
 
+  // 支持 Ctrl/⌘ + V 直接粘贴图片转字符
+  usePasteImage(useCallback((files: File[]) => { loadFile(files[0], opts) }, [loadFile, opts]))
+
   return (
     <section className="theme-card" style={{ padding: '20px 24px', cursor: 'default', display: 'grid', gap: '16px' }}>
       {/* 上传区 */}
@@ -171,7 +175,7 @@ function ImagePanel() {
           background: 'var(--bg-secondary)', cursor: 'pointer', textAlign: 'center',
         }}
       >
-        <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>点击选择 / 拖拽图片到此处</span>
+        <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>点击选择 / 拖拽 / Ctrl+V 粘贴图片</span>
         <input
           ref={fileInputRef}
           type="file"
