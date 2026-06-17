@@ -1,6 +1,7 @@
 // OpenAI 兼容 API 调用（支持流式输出）
 import type { Message } from '../types'
 import { parseSSEStream } from '../lib/sse'
+import { normalizeApiBase } from '../lib/api-url'
 
 interface ChatCompletionOptions {
   url: string
@@ -126,7 +127,7 @@ function parseModelList(data: unknown): string[] | null {
  *   （避免把 401「API Key 无效」伪装成「未获取到模型」）
  */
 export async function fetchModelList(baseUrl: string, apiKey: string): Promise<string[]> {
-  const base = baseUrl.replace(/\/$/, '')
+  const base = normalizeApiBase(baseUrl)
   const urls = [`${base}/v1/models`, `${base}/api/models`]
 
   let lastError: string | null = null

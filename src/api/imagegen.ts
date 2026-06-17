@@ -1,5 +1,6 @@
 // 图片生成 API —— 仅支持 OpenAI GPT Image 2 协议（/v1/images/generations）
 // 兼容 OpenAI 官方及 NewAPI / OneAPI / CLIProxyAPI 等 OpenAI 兼容代理
+import { normalizeApiBase } from '../lib/api-url'
 
 export interface ImageGenerationResult {
   success: boolean
@@ -85,7 +86,7 @@ async function generateWithChatCompletions(
   prompt: string,
   signal?: AbortSignal
 ): Promise<ImageGenerationResult> {
-  const base = baseUrl.replace(/\/$/, '')
+  const base = normalizeApiBase(baseUrl)
   const response = await fetch(`${base}/v1/chat/completions`, {
     method: 'POST',
     headers: {
@@ -180,7 +181,7 @@ export async function generateImage(
   signal?: AbortSignal
 ): Promise<ImageGenerationResult> {
   try {
-    const base = baseUrl.replace(/\/$/, '')
+    const base = normalizeApiBase(baseUrl)
     const actualModel = model || DEFAULT_IMAGE_MODEL
 
     const body: Record<string, unknown> = {
@@ -236,7 +237,7 @@ export async function editImage(
   signal?: AbortSignal
 ): Promise<ImageGenerationResult> {
   try {
-    const base = baseUrl.replace(/\/$/, '')
+    const base = normalizeApiBase(baseUrl)
     const actualModel = model || DEFAULT_IMAGE_MODEL
 
     const validImages = images.map((u) => u.trim()).filter(Boolean)

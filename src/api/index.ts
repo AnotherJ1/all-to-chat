@@ -8,6 +8,7 @@ import { chatCompletion } from './openai'
 import { anthropicMessages } from './anthropic'
 import { generateContent } from './gemini'
 import type { Protocol, Message } from '../types'
+import { normalizeApiBase } from '../lib/api-url'
 
 // URL 后缀映射
 const API_PATHS: Record<Protocol, string> = {
@@ -33,7 +34,7 @@ export interface ApiOptions {
 // 统一 API 调用入口
 export async function callApi(options: ApiOptions): Promise<string> {
   const { protocol } = options
-  const baseUrl = options.baseUrl.replace(/\/$/, '')
+  const baseUrl = normalizeApiBase(options.baseUrl)
   const path = API_PATHS[protocol]
 
   switch (protocol) {
